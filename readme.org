@@ -1,0 +1,72 @@
+#+title: READ ME
+
+
+
+* TODO List
+** TODO First-come-first-served (FCFS)
+The FCFS algorithm is a non-preemptive algorithm in which processes simply line
+up in the ready queue, waiting to use the CPU. This is your baseline algorithm
+(and could be implemented as RR with an “infinite” time slice).
+
+
+** TODO Shortest job first (SJF)
+In SJF, processes are stored in the ready queue in order of priority based on
+their anticipated CPU burst times. More specifically, the process with the
+shortest predicted CPU burst time will be selected as the next process executed
+by the CPU.
+
+
+** TODO Shortest remaining time (SRT)
+The SRT algorithm is a preemptive version of the SJF algorithm. In SRT, when a
+process arrives, as it enters the ready queue, if it has a predicted CPU burst
+time that is less than the remaining predicted time of the currently running
+process, a preemption occurs. When such a preemption occurs, the currently
+running process is added back to the ready queue.
+
+
+** TODO Round robin (RR)
+The RR algorithm is essentially the FCFS algorithm with time slice tslice. Each
+process is given tslice amount of time to complete its CPU burst. If the time
+slice expires, the process is preempted and added to the end of the ready queue.
+
+If a process completes its CPU burst before a time slice expiration, the next
+process on the ready queue is immediately context-switched in to use the CPU.
+
+
+** TODO Skipping preemptions in RR
+For your simulation, if a preemption occurs and there are no other processes
+on the ready queue, do not perform a context switch. For example, given
+process G is using the CPU and the ready queue is empty, if process G is
+preempted by a time slice expiration, do not context-switch process G back
+to the empty queue; instead, keep process G running with the CPU and do not
+count this as a context switch. In other words, when the time slice expires,
+check the queue to determine if a context switch should occur.
+* Command Line Arguments
+- argv[1]: Define n as the number of processes to simulate. Process IDs are
+  assigned in alphabetical order A through Z. Therefore, you will have at most
+  26 processes to simulate. 
+- argv[2]: We will use a pseudo-random number generator to determine the
+  interarrival times of CPU bursts. This command-line argument, i.e. seed,
+  serves as the seed for the pseudo- random number sequence. To ensure
+  predictability and repeatability, use srand48() with this given seed before
+  simulating each scheduling algorithm and drand48() to obtain the next value in
+  the range [0.0, 1.0). For languages that do not have these functions,
+  implement an equivalent 48-bit linear congruential generator, as described in
+  the man page for these functions in C.1 
+- argv[3]: To determine interarrival times, we will use an exponential
+  distribution; therefore, this command-line argument is parameter λ. Remember
+  that λ1 will be the average random value generated, e.g., if λ = 0.01, then
+  the average should be appoximately 100. See the exp-random.c example; and use
+  the formula shown in the code, i.e., -log( r ) / lambda, where log is the
+  natural logarithm. 
+- argv[4]: For the exponential distribution, this command-line argument
+  represents the upper bound for valid pseudo-random numbers. This threshold is
+  used to avoid values far down the long tail of the exponential distribution.
+  As an example, if this is set to 3000, all generated values above 3000 should
+  be skipped. For cases in which this value is used in the ceiling function (see
+  the next page), be sure the ceiling is still valid according to this upper
+  bound. 
+- argv[5]: Define tcs as the time, in milliseconds, that it takes to perform a
+  context switch. Remember that a context switch occurs each time a process
+  leaves the CPU and is replaced by another process. More specifically, the
+  first half of the context switch time (i.e., tcs 
