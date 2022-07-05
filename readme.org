@@ -1,6 +1,9 @@
 #+title: READ ME
 
 
+* Things todo first:
+1. Implement the random number generator. See the pdf
+2. Start implementing the four different algorithms
 
 * TODO List
 ** TODO First-come-first-served (FCFS)
