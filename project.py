@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-
 import sys
 import os
-import rand
+import * from rand
 
 POSSIBLE_IDS = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-
-
 
 
 def fcfs(): # TODO FCFS
