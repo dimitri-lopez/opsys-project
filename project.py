@@ -2,15 +2,11 @@
 
 import sys
 import os
-import random
+import rand
 
 POSSIBLE_IDS = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 
-# TODO implement 48bit linear congruential generator
-# see man pages for drand48()
-def drand48():
-    pass
 
 
 
