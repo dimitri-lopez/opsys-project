@@ -29,13 +29,15 @@ class Process():
     
 
 if __name__ == '__main__':
-    assert(len(sys.argv) == 6)
+    assert(len(sys.argv) == 8)
     n = int(sys.argv[1]);
     assert(1 <= n and n <= 26)
     seed = int(sys.argv[2]);
     l = float(sys.argv[3])
     upper_bound = float(sys.argv[4])
     tcs = int(sys.argv[5])
+    alpha = int(sys.argv[6])
+    tslice = int(sys.argv[7])
 
     for i in range(n): # produce n processes
         pid = POSSIBLE_IDS[i]
