@@ -38,6 +38,7 @@
 
 # Generate a new 48bits
 def drand48():
+    global Xn
     try: Xn
     except: raise Exception("srand48() must be called before drand48() is used.")
     a = 0x5DEECE66D # from man pages
@@ -62,3 +63,10 @@ def srand48(seedval):
     loworder = bin(0x330E)[2:]
     global Xn
     Xn = int(highorder + loworder)
+# 10100000000101100100101010000101111101010110
+
+# srand48(2)
+# print(Xn)
+# print(bin(Xn))
+# print(len(bin(Xn)))
+# print(drand48())
