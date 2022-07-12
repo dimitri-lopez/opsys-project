@@ -63,7 +63,7 @@ def next_exp(l, upper_bound):
     while math.ceil(num) > upper_bound: # skip the super high values
         r = drand48()
         num = -1 * math.log(r) / l
-    return num
+    return math.ceil(num)
 
 # TODO Really not sure what is supposed to be here tbh. Or if it is even needed?
 # See project.pdf for argv[6]
