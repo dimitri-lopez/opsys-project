@@ -77,50 +77,89 @@ def rr(processes, tcs, tslice, n): # TODO RR
     print(f"time {time}ms: Process {curr_p.pid} arrived; added to ready queue {queue}")
     time += (tcs / 2)
     curr_p = queue.pop(0)
+    next_p = None
     print(f"time {time}ms: Process {curr_p.pid} started using the CPU for {curr_p.burst_times[0]}ms burst {queue}")
 
     while finished < n:
-        # find the next thing that happens chronologically
+        next_io = 2 ** 30
+        next_arrival = 2 ** 30
+        # check if there is a process in I/O block
+        if len(io_block) > 0:
+            next_io = io_block[0].curr_io
 
-        if len(io_block) == 0:
-
-        next_io = io_block[0].curr_io
-        next_arrival = 2**30
-        next_p = None
+        # check if there is a process waiting to arrive
         if i < n:
             next_p = process_queue[i]
             next_arrival = next_p.arrival_time
 
-        # check if the CPU is being used
+        # check if the CPU isn't being used
         if curr_p is None:
-            if next_arrival == next_io:
-                if(next_p.pid < io_block[0].pid):
-                    time = next_p.arrival_time
-                else:
+            # check if queue is empty
+            if queue.is_empty():
+                # find next process that gets added to the queue and add it
+                if next_arrival < next_io:
+                    time = next_arrival
+                    queue.append(next_p)
+                    print(f"time {time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
+                    i += 1
+                elif next_io < next_arrival:
                     time = next_io
-
-            elif next_p.arrival_time < next_io:
-                time = next_p.arrival_time
+                    io_p = io_block.pop(0)
+                    queue.append(io_p)
+                    print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
+                else:
+                    if next_p.pid < io_block[0].pid:
+                        time = next_arrival
+                        queue.append(next_p)
+                        print(f"time {time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
+                    else:
+                        time = next_io
+                        queue.append(io_block.pop(0))
+                        print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
+            # now move the process from queue to CPU
+            time += (tcs / 2)
+            curr_p = queue.pop(0)
+            # check to see if the current burst is already underway
+            current_burst_initial_time = curr_p.burst_times[curr_p.cpu_bursts - curr_p.remaining_bursts]
+            if curr_p.curr_burst < current_burst_initial_time:
+                print(
+                    f"time {time}ms: Process {curr_p.pid} started using the CPU for remaining {curr_p.curr_burst}ms of {current_burst_initial_time}ms burst {queue}")
             else:
-                time = next_io
+                print(
+                    f"time {time}ms: Process {curr_p.pid} started using the CPU for {curr_p.curr_burst}ms burst {queue}")
+
+
+        # Now the CPU is being used, 4 things can happen: I/O ends, next process arrives, tslice, or burst ends
+        next_tslice = time + tslice
+        next_burst = time + curr_p.curr_burst
+        next_io = 2 ** 30
+        next_arrival = 2 ** 30
+
+        # check if there is a process in I/O block
+        if len(io_block) > 0:
+            next_io = io_block[0].curr_io
+
+        # check if there is a process waiting to arrive
+        if i < n:
+            next_p = process_queue[i]
+            next_arrival = next_p.arrival_time
 
         #
-        # next process gets added
-        if next_p.arrival_time < time+tslice and next_p.arrival_time < time + curr_p.curr_burst and next_p.arrival_time < next_io:
+        ######### next process arrives #################
+        if next_arrival < next_tslice and next_arrival < next_burst and next_arrival < next_io:
             queue.append(next_p)
             next_p = processes[i]
             i += 1
             print(f"time {next_p.arrival_time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
 
-        # I/O ends
-        elif next_io < next_p.arrival_time and next_io < time + curr_p.curr_burst and next_io < time+tslice:
-            time = next_io
+        ###### I/O block process completes #######
+        elif next_io < next_arrival and next_io < next_burst and next_io < next_tslice:
             io_process = io_block.pop(0)
             queue.append(io_process)
-            print(f"time {time}ms: Process {io_process.pid} completed I/O; added to ready queue {queue}")
+            print(f"time {next_io}ms: Process {io_process.pid} completed I/O; added to ready queue {queue}")
 
-        # time slice happens
-        elif time+tslice < next_p.arrival_time and tslice < curr_p.curr_burst and time+tslice < next_io:
+        ################# time slice happens ###################################
+        elif next_tslice < next_arrival and next_tslice < next_burst and next_tslice < next_io:
             time += tslice
             curr_p.curr_burst -= tslice
             if queue.is_empty():
@@ -138,9 +177,9 @@ def rr(processes, tcs, tslice, n): # TODO RR
                 if curr_p.curr_burst < current_burst_initial_time:
                     print(f"time {time}ms: Process {curr_p.pid} started using the CPU for remaining {curr_p.curr_burst}ms of {current_burst_initial_time}ms burst {queue}")
                 else:
-                    print(f"time {time}ms: Process {curr_p.pid} started using the CPU for {curr_p.burst_times[0]}ms burst {queue}")
+                    print(f"time {time}ms: Process {curr_p.pid} started using the CPU for {curr_p.curr_burst}ms burst {queue}")
 
-        # current process finishes CPU burst and before next process is added
+        ####### current process finishes CPU burst and before next process is added and before tslice is up ######
         else:
             time += curr_p.curr_burst
             curr_p.remaining_bursts -= 1
@@ -161,6 +200,7 @@ def rr(processes, tcs, tslice, n): # TODO RR
                 print(f"will block on I/O until time {curr_p.curr_io}ms {queue}")
                 io_block.append(curr_p)
                 io_block = sort_io(io_block)
+                curr_p = None
 
     pass
 
