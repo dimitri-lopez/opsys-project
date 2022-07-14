@@ -38,14 +38,15 @@ def main():
     processes = generate_processes(n, seed, l, upper_bound)
     for i in processes:
         print(i)
-    fcfs(processes, tcs)
+    time = fcfs(processes, tcs, n)
+    print(f"time {time}ms: Simulator ended for FCFS [Q: emtpy]")
     processes = generate_processes(n, seed, l, upper_bound)
     srt(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
     sjf(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
-    rr(processes, tcs, tslice, n)
-    print("Finished simulation.")
+    time = rr(processes, tcs, tslice, n)
+    print(f"time {time}ms: Simulator ended for RR [Q: emtpy]")
 
 def sort_by_arrival(processes):
     processes.sort(key=lambda x: x.arrival_time)
@@ -55,14 +56,16 @@ def sort_io(processes):
     processes.sort(key=lambda x: x.curr_io)
     return processes
 
-def fcfs(processes, tcs): # TODO FCFS
-    # sort based on arrival time
-    pass
+def fcfs(processes, tcs, n):
+    # call RR with an infinite tslice
+    time = rr(processes, tcs, 2**31-1, n)
+    return time
+
 def srt(processes, tcs, alpha): # TODO SRT
     pass
 def sjf(processes, tcs, alpha): # TODO SJF
     pass
-def rr(processes, tcs, tslice, n): # TODO RR
+def rr(processes, tcs, tslice, n):
     time = 0
     queue = Queue()
     io_block = []
@@ -75,7 +78,7 @@ def rr(processes, tcs, tslice, n): # TODO RR
     time += curr_p.arrival_time
     queue.append(curr_p)
     print(f"time {time}ms: Process {curr_p.pid} arrived; added to ready queue {queue}")
-    time += (tcs / 2)
+    time += int(tcs / 2)
     curr_p = queue.pop(0)
     next_p = None
     print(f"time {time}ms: Process {curr_p.pid} started using the CPU for {curr_p.burst_times[0]}ms burst {queue}")
@@ -118,7 +121,7 @@ def rr(processes, tcs, tslice, n): # TODO RR
                         queue.append(io_block.pop(0))
                         print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
             # now move the process from queue to CPU
-            time += (tcs / 2)
+            time += int(tcs / 2)
             curr_p = queue.pop(0)
             # check to see if the current burst is already underway
             current_burst_initial_time = curr_p.burst_times[curr_p.cpu_bursts - curr_p.remaining_bursts]
@@ -168,9 +171,9 @@ def rr(processes, tcs, tslice, n): # TODO RR
             else:
                 # switch to the next process in the queue
                 print(f"time {time}ms: Time slice expired; process {curr_p.pid} preempted with {curr_p.curr_burst}ms remaining {queue}")
-                time += (tcs / 2)       # switching out current process
+                time += int(tcs / 2)       # switching out current process
                 queue.append(curr_p)
-                time += (tcs / 2)       # switching in next process
+                time += int(tcs / 2)       # switching in next process
                 curr_p = queue.pop(0)
 
                 # check to see if the current burst is already underway
@@ -203,8 +206,7 @@ def rr(processes, tcs, tslice, n): # TODO RR
                 io_block.append(curr_p)
                 io_block = sort_io(io_block)
                 curr_p = None
-
-    pass
+    return time
 
 
 # Exponential Distribution
