@@ -44,7 +44,7 @@ def main():
     processes = generate_processes(n, seed, l, upper_bound)
     sjf(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
-    rr(processes, tcs, tslice)
+    rr(processes, tcs, tslice, n)
     print("Finished simulation.")
 
 def sort_by_arrival(processes):
@@ -188,14 +188,14 @@ def rr(processes, tcs, tslice, n): # TODO RR
             if curr_p.remaining_bursts == 0:
                 print(f"time {time}ms: Process {curr_p.pid} terminated {queue}")
                 finished += 1
-                time += int(tslice/2)   # remove process from CPU
+                time += int(tcs/2)   # remove process from CPU
                 curr_p = None           # CPU has no process being run
 
             else:
                 curr_p.reset_curr_burst()
                 print(f"time {time}ms: Process {curr_p.pid} completed a CPU burst; {curr_p.remaining_bursts} bursts to go {queue}")
                 print(f"time {time}ms: Process {curr_p.pid} switching out of CPU; ", end="")
-                time += int(tslice/2)
+                time += int(tcs/2)
                 curr_p.set_io_exit(time)
                 print(f"will block on I/O until time {curr_p.curr_io}ms {queue}")
                 io_block.append(curr_p)
