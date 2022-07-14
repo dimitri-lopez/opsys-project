@@ -28,7 +28,8 @@ class Process():
 
     def reset_curr_io(self):
         index = self.cpu_bursts - self.remaining_bursts
-        self.curr_io = self.io_times[index]
+        if index < len(self.io_times):
+            self.curr_io = self.io_times[index]
 
     def __str__(self):
         string = ""
