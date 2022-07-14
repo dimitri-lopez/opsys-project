@@ -12,7 +12,7 @@ class Process():
         self.tau = math.ceil(1 / l)      # Initial tau value
         self.finish = None               # Finish time for the process
         self.curr_burst = burst_times[0] # Time left on burst that the process is currently on
-        self.curr_io = 0       # I/O end time for current burst (time+io_time)
+        self.curr_io = io_times[0]       # I/O end time for current burst (time+io_time)
 
         self.remaining_bursts = self.cpu_bursts
 

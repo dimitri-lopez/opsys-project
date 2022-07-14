@@ -105,6 +105,7 @@ def rr(processes, tcs, tslice, n): # TODO RR
                 elif next_io < next_arrival:
                     time = next_io
                     io_p = io_block.pop(0)
+                    io_p.reset_curr_io()
                     queue.append(io_p)
                     print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
                 else:
@@ -188,6 +189,7 @@ def rr(processes, tcs, tslice, n): # TODO RR
             if curr_p.remaining_bursts == 0:
                 print(f"time {time}ms: Process {curr_p.pid} terminated {queue}")
                 finished += 1
+                curr_p.set_finish_time(time)
                 time += int(tcs/2)   # remove process from CPU
                 curr_p = None           # CPU has no process being run
 
