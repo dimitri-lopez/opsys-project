@@ -39,19 +39,19 @@ def main():
     processes = generate_processes(n, seed, l, upper_bound)
     for i in processes:
         print(i)
-    # fcfs_times = fcfs(processes, tcs, n)
-    # fcfs_time = fcfs_times[0]
-    # fcfs_cpu_use = fcfs_times[1]
-    # print(f"time {time}ms: Simulator ended for FCFS [Q: emtpy]")
+    fcfs_times = fcfs(processes, tcs, n)
+    fcfs_time = fcfs_times[0]
+    fcfs_cpu_use = fcfs_times[1]
+    print(f"time {time}ms: Simulator ended for FCFS [Q: emtpy]")
     processes = generate_processes(n, seed, l, upper_bound)
     sjf(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
     srt(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
-    # rr_times = rr(processes, tcs, tslice, n)
-    # rr_time = rr_times[0]
-    # rr_cpu_use = rr_times[1]
-    # print(f"time {time}ms: Simulator ended for RR [Q: emtpy]")
+    rr_times = rr(processes, tcs, tslice, n)
+    rr_time = rr_times[0]
+    rr_cpu_use = rr_times[1]
+    print(f"time {time}ms: Simulator ended for RR [Q: emtpy]")
 
 def sort_by_arrival(processes):
     processes.sort(key=lambda x: x.arrival_time)
