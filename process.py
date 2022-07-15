@@ -68,9 +68,9 @@ class Process():
 
 class Event():
     CPU_BURST_END = 0
-    IO = 2 # IO COMPLETION
-    CS_START = 3.1 # TODO Not sure what these values should be
-    CS_END = 3.2
+    IO = 3 # IO COMPLETION
+    CS_START = 2.1 # TODO Not sure what these values should be
+    CS_END = 2.2
     ARRIVAL = 4
     # PREMPTION = "PREMPTION"
 
