@@ -80,6 +80,9 @@ def sjf(processes, tcs, alpha): # TODO SJF
         events.add(Event(p, 0, p.arrival_time, Event.ARRIVAL))
 
     time = 0
+    context_switches = 0 # STATS
+    burst_times = []
+    cpu_running = 0
     in_use = False
     print(f"\ntime {time}ms: Simulator started for SJF {rqueue}")
     while events.size() != 0 or rqueue.size () != 0: # run until out of events
@@ -88,6 +91,8 @@ def sjf(processes, tcs, alpha): # TODO SJF
         if time != peek_time and in_use == False and rqueue.size() != 0: # cpu not in use, start a new process
             process = rqueue.pop()
             events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_START)) # add half a context switch
+            process.set_queue_exit(time) # STATS
+            process.started_burst(time)
             in_use = True
             continue
         event = events.pop() # pop from heap
@@ -100,22 +105,31 @@ def sjf(processes, tcs, alpha): # TODO SJF
         if   event.etype == Event.ARRIVAL:
             rqueue.add(process)
             print(f"time {time}ms: {process.sprint()} arrived; added to ready queue {rqueue}")
-            # TODO Add CS_START here...
+
+            process.set_queue_entry(time) # STATS
         elif event.etype == Event.IO:
             rqueue.add(process)
             print(f"time {time}ms: {process.sprint()} completed I/O; added to ready queue {rqueue}")
+            process.set_queue_entry(time) # STATS
         elif event.etype == Event.CS_START: # the process has finished being loaded into the CPU
             burst_time = process.run_burst()
             events.add(Event(process, time, burst_time, Event.CPU_BURST_END)) # TODO Last line written
+            cpu_running += burst_time
             print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
+
+            burst_times.append(burst_time) # STATS
+            context_switches += 1 # STATS
+
 
         elif event.etype == Event.CS_END:
             in_use = False
+            process.finished_burst(time)
         elif event.etype == Event.CPU_BURST_END:
             if process.rbursts() == 0:
                 print(f"time {time}ms: Process {process.pid} terminated {rqueue}")
                 # Context switch to switch out of the CPU
                 events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
+                process.set_finish_time(time)
                 continue
 
             plural = "s" if process.rbursts() > 1 else ""
@@ -135,7 +149,29 @@ def sjf(processes, tcs, alpha): # TODO SJF
 
     print(f"time {time}ms: Simulator ended for SJF {rqueue}")
 
+
+    print(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms")
+    total_wait_time = []
+    for i in processes: total_wait_time.append(i.get_total_wait_time())
+    print(f"-- average wait time: {mean3(total_wait_time) :.3f} ms")
+    ta_times = []
+    for i in processes: ta_times += i.get_ta_times()
+    print(f"-- average turnaround time: {mean3(ta_times) :.3f} ms")
+    print(f"-- total number of context switches: {context_switches}")
+    print(f"-- total number of preemptions: 0")
+    print(f"-- CPU utilization: {round3(cpu_running / time * 100) :.3f}%") # TODO
+
+
     return time
+
+def mean3(nums):
+    return round3(mean(nums))
+def round3(num):
+    return math.ceil(num * 1000) / 1000
+def mean(nums):
+    total = 0
+    for i in nums: total += i
+    return total / len(nums)
 
 def event_print(time, string):
     DEBUG = 1000

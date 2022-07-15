@@ -15,8 +15,10 @@ class Process():
         self.num_cs = 0                  # counts the number of context switches
         self.num_preemp = 0              # counts the number of preemptions
         self.ta_times = []               # keeps track of the turnaround time for each cpu burst (indices will match up with burst_times
-        self.wait_times = cpu_bursts*[0] # keeps track of the waiting time for each cpu burst (indices will match up with burst_times
+        # self.wait_times = cpu_bursts*[0] # keeps track of the waiting time for each cpu burst (indices will match up with burst_times
+        self.wait_times = []
         self.queue_entry = 0             # keeps track of the time when process enters the queue (for wait time)
+        self.burst_start = 0             # leep track of time when burst starts
         if len(io_times) > 0:
             self.curr_io = io_times[0]   # I/O end time for current burst (time+io_time)
 
@@ -32,10 +34,24 @@ class Process():
         self.queue_entry = time
 
     def set_queue_exit(self, time):
-        self.wait_times[self.cpu_bursts-self.remaining_bursts] += (time-self.queue_entry)
+        # self.wait_times[self.cpu_bursts-self.remaining_bursts] += (time-self.queue_entry)
+        self.wait_times.append(time - self.queue_entry)
+    def started_burst(self, time):
+        self.burst_start = time
+    def finished_burst(self, time):
+        self.ta_times.append(time - self.burst_start)
+    def get_total_wait_time(self):
+        total = 0
+        for i in self.wait_times: total += i
+        return total
+    def get_ta_times(self):
+        return self.ta_times
 
     def set_finish_time(self, time):
         self.finish = time
+    def get_total_time(self):
+        assert(self.finish is not None)
+        return self.finish - self.arrival_time
 
     def reset_curr_burst(self):
         index = self.cpu_bursts - self.remaining_bursts
@@ -81,9 +97,9 @@ class Process():
 
 class Event():
     CPU_BURST_END = 0
-    IO = 3 # IO COMPLETION
     CS_START = 2.1 # TODO Not sure what these values should be
     CS_END = 2.2
+    IO = 3 # IO COMPLETION
     ARRIVAL = 4
     # PREMPTION = "PREMPTION"
 
