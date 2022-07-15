@@ -68,39 +68,41 @@ def fcfs(processes, tcs, n):
 
 def sjf(processes, tcs, alpha): # TODO SJF
     # based on shortest anticipated CPU burst time
-    events = PriorityQueue() # Will store all the events
-    rqueue = Queue() # this will be our ready queue
+    events = SortedQueue(None) # Will store all the events
+    rqueue = SortedQueue(lambda process: (process.tau, process.pid)) # this will be our ready queue
 
     # Place arrival times in events
     for p in processes:
-        events.put(Event(p, 0, p.arrival_time, Event.ARRIVAL))
+        events.add(Event(p, 0, p.arrival_time, Event.ARRIVAL))
 
     time = 0
     in_use = False
     print(f"\ntime {time}ms: Simulator started for SJF {rqueue}")
-    while events.qsize() != 0 or rqueue.size () != 0: # run until out of events
-        if in_use == False and rqueue.size() != 0: # cpu not in use, start a new process
-            process = rqueue.pop(0)
-            events.put(Event(process, time, math.ceil(tcs / 2), Event.CS_START)) # add half a context switch
+    while events.size() != 0 or rqueue.size () != 0: # run until out of events
+        peek_time = -1
+        if events.size() != 0: peek_time = events.peek().get_time()
+        if time != peek_time and in_use == False and rqueue.size() != 0: # cpu not in use, start a new process
+            process = rqueue.pop()
+            events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_START)) # add half a context switch
             in_use = True
             continue
-        event = events.get() # pop from heap
+        event = events.pop() # pop from heap
         time = event.start + event.time
         process = event.process
         # print(f"\ttime: {time} event: {event} process: {process.sprint()}") # DEBUGGING
 
-        # if time > 1000: break # DEBUG
+        # if time > 3000: break # DEBUG
 
         if   event.etype == Event.ARRIVAL:
-            rqueue.append(process)
+            rqueue.add(process)
             print(f"time {time}ms: {process.sprint()} arrived; added to ready queue {rqueue}")
             # TODO Add CS_START here...
         elif event.etype == Event.IO:
-            rqueue.append(process)
+            rqueue.add(process)
             print(f"time {time}ms: {process.sprint()} completed I/O; added to ready queue {rqueue}")
         elif event.etype == Event.CS_START: # the process has finished being loaded into the CPU
             burst_time = process.run_burst()
-            events.put(Event(process, time, burst_time, Event.CPU_BURST_END)) # TODO Last line written
+            events.add(Event(process, time, burst_time, Event.CPU_BURST_END)) # TODO Last line written
             print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
 
         elif event.etype == Event.CS_END:
@@ -109,7 +111,7 @@ def sjf(processes, tcs, alpha): # TODO SJF
             if process.rbursts() == 0:
                 print(f"time {time}ms: Process {process.pid} terminated {rqueue}")
                 # Context switch to switch out of the CPU
-                events.put(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
+                events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
                 continue
 
             plural = "s" if process.rbursts() > 1 else ""
@@ -121,30 +123,21 @@ def sjf(processes, tcs, alpha): # TODO SJF
 
             # Switching out of the CPU
             io_time = process.run_io() + math.ceil(tcs / 2) # adding in an end context switch
-            events.put(Event(process, time, io_time, Event.IO))
+            events.add(Event(process, time, io_time, Event.IO))
             print(f"time {time}ms: Process {process.pid} switching out of CPU; will block on I/O until time {time + io_time}ms {rqueue}")
 
             # Context switch to switch out of the CPU
-            events.put(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
+            events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
 
     print(f"time {time}ms: Simulator ended for SJF {rqueue}")
 
     return time
+
 def event_print(time, string):
     DEBUG = 1000
     if time < DEBUG: print(string)
 
-def print_pqueue(queue):
-    sorted_array = []
-    for i in range(queue.qsize()):
-        sorted_array.append(queue.get())
-        print(sorted_array[-1])
-
-    for i in range(len(sorted_array)):
-        queue.put(sorted_array.pop(0))
 def srt(processes, tcs, alpha): # TODO SRT
-
-
     pass
 
 def rr(processes, tcs, tslice, n):
