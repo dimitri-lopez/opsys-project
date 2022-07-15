@@ -190,6 +190,7 @@ def rr(processes, tcs, tslice, n):
                 # find next process that gets added to the queue and add it
                 if next_arrival < next_io:
                     time = next_arrival
+                    next_p.set_queue_entry(time)
                     queue.append(next_p)
                     print(f"time {time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
                     i += 1
@@ -197,20 +198,24 @@ def rr(processes, tcs, tslice, n):
                     time = next_io
                     io_p = io_block.pop(0)
                     io_p.reset_curr_io()
+                    io_p.set_queue_entry(time)
                     queue.append(io_p)
                     print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
                 else:
                     if next_p.pid < io_block[0].pid:
                         time = next_arrival
+                        next_p.set_queue_entry(time)
                         queue.append(next_p)
                         print(f"time {time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
                     else:
                         time = next_io
+                        io_p.set_queue_entry(time)
                         queue.append(io_block.pop(0))
                         print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
             # now move the process from queue to CPU
-            time += int(tcs / 2)
             curr_p = queue.pop(0)
+            curr_p.set_queue_exit(time)
+            time += int(tcs / 2)
             # check to see if the current burst is already underway
             current_burst_initial_time = curr_p.burst_times[curr_p.cpu_bursts - curr_p.remaining_bursts]
             if curr_p.curr_burst < current_burst_initial_time:
@@ -239,6 +244,7 @@ def rr(processes, tcs, tslice, n):
         #
         ######### next process arrives #################
         if next_arrival < next_tslice and next_arrival < next_burst and next_arrival < next_io:
+            next_p.set_queue_entry(time)
             queue.append(next_p)
             next_p = processes[i]
             i += 1
@@ -247,6 +253,7 @@ def rr(processes, tcs, tslice, n):
         ###### I/O block process completes #######
         elif next_io < next_arrival and next_io < next_burst and next_io < next_tslice:
             io_process = io_block.pop(0)
+            io_process.set_queue_entry(time)
             queue.append(io_process)
             print(f"time {next_io}ms: Process {io_process.pid} completed I/O; added to ready queue {queue}")
 
@@ -261,9 +268,11 @@ def rr(processes, tcs, tslice, n):
                 # switch to the next process in the queue
                 print(f"time {time}ms: Time slice expired; process {curr_p.pid} preempted with {curr_p.curr_burst}ms remaining {queue}")
                 time += int(tcs / 2)       # switching out current process
+                curr_p.set_queue_entry(time)
                 queue.append(curr_p)
                 time += int(tcs / 2)       # switching in next process
                 curr_p = queue.pop(0)
+                curr_p.set_queue_exit(time)
 
                 # check to see if the current burst is already underway
                 current_burst_initial_time = curr_p.burst_times[curr_p.cpu_bursts - curr_p.remaining_bursts]
