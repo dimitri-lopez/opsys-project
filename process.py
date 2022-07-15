@@ -14,10 +14,11 @@ class Process():
         self.curr_burst = burst_times[0] # Time left on burst that the process is currently on
         self.num_cs = 0                  # counts the number of context switches
         self.num_preemp = 0              # counts the number of preemptions
+        self.wait_times = cpu_bursts*[0] # keeps track of the waiting time for each cpu burst (indices will match up with burst_times
+        # self.wait_times = []
         self.ta_times = []               # keeps track of the turnaround time for each cpu burst (indices will match up with burst_times
-        # self.wait_times = cpu_bursts*[0] # keeps track of the waiting time for each cpu burst (indices will match up with burst_times
-        self.wait_times = []
         self.queue_entry = 0             # keeps track of the time when process enters the queue (for wait time)
+        self.ta_entry = 0                # keeps track of the time when the process enters the queue for the first time (for turnaround time)
         self.burst_start = 0             # leep track of time when burst starts
         if len(io_times) > 0:
             self.curr_io = io_times[0]   # I/O end time for current burst (time+io_time)
@@ -30,12 +31,18 @@ class Process():
     def add_peemp(self):
         self.num_preemp += 1
 
+    def set_ta_entry(self, time):
+        self.ta_entry = time
+
+    def set_ta_exit(self, time):
+        self.wait_times[self.cpu_bursts - self.remaining_bursts] += (time - self.ta_entry)
+
     def set_queue_entry(self, time):
         self.queue_entry = time
 
     def set_queue_exit(self, time):
-        # self.wait_times[self.cpu_bursts-self.remaining_bursts] += (time-self.queue_entry)
-        self.wait_times.append(time - self.queue_entry)
+        self.wait_times[self.cpu_bursts-self.remaining_bursts] += (time-self.queue_entry)
+        # self.wait_times.append(time - self.queue_entry)
     def started_burst(self, time):
         self.burst_start = time
     def finished_burst(self, time):

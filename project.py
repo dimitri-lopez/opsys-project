@@ -42,7 +42,7 @@ def main():
     fcfs_times = fcfs(processes, tcs, n)
     fcfs_time = fcfs_times[0]
     fcfs_cpu_use = fcfs_times[1]
-    print(f"time {time}ms: Simulator ended for FCFS [Q: emtpy]")
+    print(f"time {fcfs_time}ms: Simulator ended for FCFS [Q: emtpy]")
     processes = generate_processes(n, seed, l, upper_bound)
     sjf(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
@@ -51,7 +51,7 @@ def main():
     rr_times = rr(processes, tcs, tslice, n)
     rr_time = rr_times[0]
     rr_cpu_use = rr_times[1]
-    print(f"time {time}ms: Simulator ended for RR [Q: emtpy]")
+    print(f"time {rr_time}ms: Simulator ended for RR [Q: emtpy]")
 
 def sort_by_arrival(processes):
     processes.sort(key=lambda x: x.arrival_time)
@@ -194,6 +194,7 @@ def rr(processes, tcs, tslice, n):
     time += curr_p.arrival_time
     queue.append(curr_p)
     print(f"time {time}ms: Process {curr_p.pid} arrived; added to ready queue {queue}")
+    curr_p.set_ta_entry(time)
     time += int(tcs / 2)
     curr_p = queue.pop(0)
     next_p = None
@@ -233,11 +234,13 @@ def rr(processes, tcs, tslice, n):
                     if next_p.pid < io_block[0].pid:
                         time = next_arrival
                         next_p.set_queue_entry(time)
+                        next_p.set_ta_entry(time)
                         queue.append(next_p)
                         print(f"time {time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
                     else:
                         time = next_io
                         io_p.set_queue_entry(time)
+                        io_p.set_ta_entry(time)
                         queue.append(io_block.pop(0))
                         print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
             # now move the process from queue to CPU
@@ -273,6 +276,7 @@ def rr(processes, tcs, tslice, n):
         ######### next process arrives #################
         if next_arrival < next_tslice and next_arrival < next_burst and next_arrival < next_io:
             next_p.set_queue_entry(time)
+            next_p.set_ta_entry(time)
             queue.append(next_p)
             next_p = processes[i]
             i += 1
@@ -282,6 +286,7 @@ def rr(processes, tcs, tslice, n):
         elif next_io < next_arrival and next_io < next_burst and next_io < next_tslice:
             io_process = io_block.pop(0)
             io_process.set_queue_entry(time)
+            next_p.set_ta_entry(time)
             queue.append(io_process)
             print(f"time {next_io}ms: Process {io_process.pid} completed I/O; added to ready queue {queue}")
 
@@ -313,6 +318,7 @@ def rr(processes, tcs, tslice, n):
         else:
             time += curr_p.curr_burst
             cpu_use_time += curr_p.curr_burst
+            curr_p.set_ta_exit(time+int(tcs/2))
             curr_p.remaining_bursts -= 1
 
             # check to see if process terminated
