@@ -24,7 +24,7 @@ class Process():
         index = self.cpu_bursts - self.remaining_bursts
         self.curr_burst = self.burst_times[index]
 
-    def set_io_exit(self,time):
+    def set_io_exit(self, time):
         self.curr_io += time
 
     def reset_curr_io(self):
