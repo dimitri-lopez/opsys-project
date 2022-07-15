@@ -31,6 +31,9 @@ class Process():
         if index < len(self.io_times):
             self.curr_io = self.io_times[index]
 
+    def run_burst(self):
+        return self.burst_times.pop(0)
+
     def __str__(self):
         string = ""
         string += f"Process {self.pid}: arrival time {self.arrival_time}ms; tau {self.tau}ms; {self.remaining_bursts} CPU bursts:\n"
@@ -39,17 +42,30 @@ class Process():
         string += f"--> CPU burst {self.burst_times[-1]}ms"
         return string
     def __repr__(self):
-        string = ""
-        string += f"Process {self.pid}: arrival time {self.arrival_time}ms; tau {self.tau}ms; {self.remaining_bursts} CPU bursts:\n"
-        for i in range(len(self.cpu_bursts) - 1):
-            string += f"--> CPU burst {self.burst_times[i]}ms --> I/O burst {self.io_times[i]}ms\n"
-        string += f"--> CPU burst {self.burst_times[-1]}ms"
-        return string
+        return self.__str__
 
     # def reset_process(self):
     #     self.finish = None # prcess hasn't finished
     #     self.tau = self.itau # reset to initial tau value
     #     self.remaining_bursts = self.cpu_bursts
 
-p = Process(1, 1, 2, [1, 2], [1], 1)
-print(p)
+class Event():
+    ARRIVAL = "ARRIVAL"
+    IO = "IO" # IO COMPLETION
+    PREMPTION = "PREMPTION"
+    CS_START = "CS_STAT"
+    CS_END = "CS_END"
+    CPU_BURST = "CPU_BURST"
+
+    def __init__(self, process, time, etype):
+        assert(etype in EVENT_TYPE)
+        self.process = process
+        self.time = time
+        self.etype = etype
+    def __lt__(self, other):
+        return self.time < other.time
+    def __str__(self):
+        string = f"EVENT: time: {self.time} type: {self.etype}"
+        return string
+    def __repr__(self):
+        return self.__str__()

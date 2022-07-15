@@ -15,6 +15,8 @@ class Queue():
             return True
         else:
             return False
+    def size(self):
+        return len(self.queue)
 
     def __str__(self):
         str = "[Q:"

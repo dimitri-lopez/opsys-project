@@ -12,6 +12,7 @@
 import sys
 import os
 import math
+from queue import PriorityQueue
 
 # project import
 from rand48 import *
@@ -27,8 +28,8 @@ def main():
     seed = int(sys.argv[2]);
     l = float(sys.argv[3])
     upper_bound = float(sys.argv[4])
-    tcs = int(sys.argv[5])
-    alpha = float(sys.argv[6]) # I still don't really know what this one does...
+    tcs = int(sys.argv[5])     # context switch
+    alpha = float(sys.argv[6]) # used to calculate new tau's
     tslice = int(sys.argv[7])
 
     print("Read in arguments")
@@ -61,9 +62,53 @@ def fcfs(processes, tcs, n):
     time = rr(processes, tcs, 2**31-1, n)
     return time
 
-def srt(processes, tcs, alpha): # TODO SRT
-    pass
 def sjf(processes, tcs, alpha): # TODO SJF
+    # based on shortest anticipated CPU burst time
+    events = PriorityQueue() # Will store all the events
+    rqueue = Queue() # this will be our ready queue
+
+    # Place arrival times in events
+    for p in processes:
+        events.put(Event(p, p.arrival_time, Event.ARRIVAL))
+
+    time = 0
+    in_use = False
+    while events.qsize() != 0 and rqueue.size () != 0: # run until out of events
+        if in_use == False and rqueue.size() != 0: # cpu not in use, start a new process
+            process = rqueue.pop(0)
+            events.put(Event(process, time + (tcs / 2), Event.CS_START)) # add half a context switch
+        event = events.get() # pop from heap
+        time = event.time
+        process = event.process
+
+        if   event.etype == Event.ARRIVAL:
+            rqueue.append(process)
+            print(f"time {time}ms: Process {process.pid} (tau {process.tau}ms) arrived; added to ready queue {rqueue}")
+            # Kickstart the start of things:
+        elif event.etype == Event.IO_COMPLETION:
+
+        elif event.etype == Event.CS_START: # the process has finished being loaded into the CPU
+            burst_time = process.run_burst()
+            events.put(Event(process, time + burst_time, Event.CPU_BURST_END)) # TODO Last line written
+            print(f"time {time}ms: Process {process.pid} ({process.tau} {process.time}ms) started using the CPU for {burst_time}ms burst {rqueue}")
+        elif event.etype == Event.CS_END:
+
+        elif event.etype == Event.CPU_BURST_END:
+
+
+        sfj_event_handler(event)
+
+    return time
+
+def print_pqueue(queue):
+    sorted_array = []
+    for i in range(queue.qsize()):
+        sorted_array.append(queue.get())
+        print(sorted_array[-1])
+
+    for i in range(len(sorted_array)):
+        queue.put(sorted_array.pop(0))
+def srt(processes, tcs, alpha): # TODO SRT
     pass
 def rr(processes, tcs, tslice, n):
     time = 0
