@@ -53,6 +53,10 @@ def sort_by_arrival(processes):
     processes.sort(key=lambda x: x.arrival_time)
     return processes
 
+def sort_by_next_burst(processes):
+    processes.sort(key=lambda x: x.curr_burst)
+    return processes
+
 def sort_io(processes):
     processes.sort(key=lambda x: x.curr_io)
     return processes
@@ -73,7 +77,7 @@ def sjf(processes, tcs, alpha): # TODO SJF
 
     time = 0
     in_use = False
-    while events.qsize() != 0 and rqueue.size () != 0: # run until out of events
+    while events.qsize() != 0 and rqueue.size() != 0: # run until out of events
         if in_use == False and rqueue.size() != 0: # cpu not in use, start a new process
             process = rqueue.pop(0)
             events.put(Event(process, time + (tcs / 2), Event.CS_START)) # add half a context switch
@@ -109,7 +113,10 @@ def print_pqueue(queue):
     for i in range(len(sorted_array)):
         queue.put(sorted_array.pop(0))
 def srt(processes, tcs, alpha): # TODO SRT
+
+
     pass
+
 def rr(processes, tcs, tslice, n):
     time = 0
     queue = Queue()
