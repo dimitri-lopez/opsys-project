@@ -274,7 +274,7 @@ def generate_processes(n, seed, l, upper_bound):
     srand48(seed)
     for i in range(n): # produce n processes
         pid = POSSIBLE_IDS[i]
-        arrival_time = math.floor(next_exp(l, upper_bound)) # step 1
+        arrival_time = math.floor(next_exp(l, upper_bound)) - 1 # step 1
         cpu_bursts = math.ceil(drand48() * 100) # step 2
         burst_times = []
         io_times = []
