@@ -15,6 +15,7 @@ class Process():
         self.num_cs = 0                  # counts the number of context switches
         self.num_preemp = 0              # counts the number of preemptions
         self.ta_times = []               # keeps track of the turnaround time for each cpu burst (indices will match up with burst_times
+        self.ta_entry = 0                # keeps track of the time when the process enters the queue for the first time (for turnaround time)
         self.wait_times = cpu_bursts*[0] # keeps track of the waiting time for each cpu burst (indices will match up with burst_times
         self.queue_entry = 0             # keeps track of the time when process enters the queue (for wait time)
         if len(io_times) > 0:
