@@ -29,6 +29,12 @@ class Process():
     def add_peemp(self):
         self.num_preemp += 1
 
+    def set_ta_entry(self, time):
+        self.ta_entry = time
+
+    def set_ta_exit(self, time):
+        self.wait_times[self.cpu_bursts - self.remaining_bursts] += (time - self.ta_entry)
+
     def set_queue_entry(self, time):
         self.queue_entry = time
 
