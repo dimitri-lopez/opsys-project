@@ -39,14 +39,18 @@ def main():
     processes = generate_processes(n, seed, l, upper_bound)
     for i in processes:
         print(i)
-    # time = fcfs(processes, tcs, n)
+    # fcfs_times = fcfs(processes, tcs, n)
+    # fcfs_time = fcfs_times[0]
+    # fcfs_cpu_use = fcfs_times[1]
     # print(f"time {time}ms: Simulator ended for FCFS [Q: emtpy]")
     processes = generate_processes(n, seed, l, upper_bound)
     sjf(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
     srt(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
-    # time = rr(processes, tcs, tslice, n)
+    # rr_times = rr(processes, tcs, tslice, n)
+    # rr_time = rr_times[0]
+    # rr_cpu_use = rr_times[1]
     # print(f"time {time}ms: Simulator ended for RR [Q: emtpy]")
 
 def sort_by_arrival(processes):
@@ -142,6 +146,7 @@ def srt(processes, tcs, alpha): # TODO SRT
 
 def rr(processes, tcs, tslice, n):
     time = 0
+    cpu_use_time = 0
     queue = Queue()
     io_block = []
     finished = 0
@@ -240,6 +245,7 @@ def rr(processes, tcs, tslice, n):
         ################# time slice happens ###################################
         elif next_tslice < next_arrival and next_tslice < next_burst and next_tslice < next_io:
             time += tslice
+            cpu_use_time += tslice
             curr_p.curr_burst -= tslice
             if queue.is_empty():
                 print(f"time {time}ms: Time slice expired; no preemption because ready queue is empty {queue}")
@@ -261,6 +267,7 @@ def rr(processes, tcs, tslice, n):
         ####### current process finishes CPU burst and before next process is added and before tslice is up ######
         else:
             time += curr_p.curr_burst
+            cpu_use_time += curr_p.curr_burst
             curr_p.remaining_bursts -= 1
 
             # check to see if process terminated
@@ -281,7 +288,7 @@ def rr(processes, tcs, tslice, n):
                 io_block.append(curr_p)
                 io_block = sort_io(io_block)
                 curr_p = None
-    return time
+    return [time, cpu_use_time]
 
 
 # Exponential Distribution

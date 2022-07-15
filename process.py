@@ -12,6 +12,10 @@ class Process():
         self.tau = math.ceil(1 / l)      # Initial tau value
         self.finish = None               # Finish time for the process
         self.curr_burst = burst_times[0] # Time left on burst that the process is currently on
+        self.num_cs = 0                  # counts the number of context switches
+        self.num_premp = 0               # counts the number of preemptions
+        self.ta_times = []               # keeps track of the turnaround time for each cpu burst (indices will match up with burst_times
+        self.wait_times = []             # keeps track of the waiting time for each cpu burst (indices will match up with burst_times
         if len(io_times) > 0:
             self.curr_io = io_times[0]   # I/O end time for current burst (time+io_time)
 
