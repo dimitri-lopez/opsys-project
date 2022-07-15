@@ -58,7 +58,8 @@ class Process():
 
     def __str__(self):
         string = ""
-        string += f"Process {self.pid}: arrival time {self.arrival_time}ms; tau {self.tau}ms; {self.remaining_bursts} CPU bursts:\n"
+        plural = "s" if self.rbursts() > 1 else ""
+        string += f"Process {self.pid}: arrival time {self.arrival_time}ms; tau {self.tau}ms; {self.remaining_bursts} CPU burst{plural}:\n"
         for i in range(self.cpu_bursts - 1):
             string += f"--> CPU burst {self.burst_times[i]}ms --> I/O burst {self.io_times[i]}ms\n"
         string += f"--> CPU burst {self.burst_times[-1]}ms"
@@ -79,20 +80,26 @@ class Process():
     #     self.remaining_bursts = self.cpu_bursts
 
 class Event():
-    ARRIVAL = "ARRIVAL"
-    IO = "IO" # IO COMPLETION
-    PREMPTION = "PREMPTION"
-    CS_START = "CS_STAT"
-    CS_END = "CS_END"
-    CPU_BURST_END = "CPU_BURST"
+    CPU_BURST_END = 0
+    IO = 2 # IO COMPLETION
+    CS_START = 3.1 # TODO Not sure what these values should be
+    CS_END = 3.2
+    ARRIVAL = 4
+    # PREMPTION = "PREMPTION"
 
     def __init__(self, process, start, time, etype):
         self.process = process
         self.start = start
         self.time = time
         self.etype = etype
+    def get_time(self):
+        return self.start + self.time
     def __lt__(self, other):
-        return self.start + self.time < other.start + other.time
+        if self.get_time() == other.get_time():
+            if self.etype == other.etype: return self.process.pid < other.process.pid
+            else: return self.etype < other.etype
+
+        return self.get_time() < other.get_time()
     def __str__(self):
         string = f"EVENT: time: {self.start + self.time} start: {self.start} type: {self.etype}"
         return string
