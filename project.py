@@ -32,22 +32,22 @@ def main():
     alpha = float(sys.argv[6]) # used to calculate new tau's
     tslice = int(sys.argv[7])
 
-    print("Read in arguments")
+    # print("Read in arguments")
 
     # the pdf says to "reset" the simulation after each method and regenerate stuff.
     # I don't think generating the processes again is really needed, but we will see
     processes = generate_processes(n, seed, l, upper_bound)
     for i in processes:
         print(i)
-    time = fcfs(processes, tcs, n)
-    print(f"time {time}ms: Simulator ended for FCFS [Q: emtpy]")
-    processes = generate_processes(n, seed, l, upper_bound)
-    srt(processes, tcs, alpha)
+    # time = fcfs(processes, tcs, n)
+    # print(f"time {time}ms: Simulator ended for FCFS [Q: emtpy]")
     processes = generate_processes(n, seed, l, upper_bound)
     sjf(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
-    time = rr(processes, tcs, tslice, n)
-    print(f"time {time}ms: Simulator ended for RR [Q: emtpy]")
+    srt(processes, tcs, alpha)
+    processes = generate_processes(n, seed, l, upper_bound)
+    # time = rr(processes, tcs, tslice, n)
+    # print(f"time {time}ms: Simulator ended for RR [Q: emtpy]")
 
 def sort_by_arrival(processes):
     processes.sort(key=lambda x: x.arrival_time)
@@ -69,36 +69,66 @@ def sjf(processes, tcs, alpha): # TODO SJF
 
     # Place arrival times in events
     for p in processes:
-        events.put(Event(p, p.arrival_time, Event.ARRIVAL))
+        events.put(Event(p, 0, p.arrival_time, Event.ARRIVAL))
 
     time = 0
     in_use = False
-    while events.qsize() != 0 and rqueue.size () != 0: # run until out of events
+    print(f"\ntime {time}ms: Simulator started for SJF {rqueue}")
+    while events.qsize() != 0 or rqueue.size () != 0: # run until out of events
         if in_use == False and rqueue.size() != 0: # cpu not in use, start a new process
             process = rqueue.pop(0)
-            events.put(Event(process, time + (tcs / 2), Event.CS_START)) # add half a context switch
+            events.put(Event(process, time, math.ceil(tcs / 2), Event.CS_START)) # add half a context switch
+            in_use = True
+            continue
         event = events.get() # pop from heap
-        time = event.time
+        time = event.start + event.time
         process = event.process
+        # print(f"\ttime: {time} event: {event} process: {process.sprint()}") # DEBUGGING
+
+        # if time > 1000: break # DEBUG
 
         if   event.etype == Event.ARRIVAL:
             rqueue.append(process)
-            print(f"time {time}ms: Process {process.pid} (tau {process.tau}ms) arrived; added to ready queue {rqueue}")
-            # Kickstart the start of things:
-        elif event.etype == Event.IO_COMPLETION:
-
+            print(f"time {time}ms: {process.sprint()} arrived; added to ready queue {rqueue}")
+            # TODO Add CS_START here...
+        elif event.etype == Event.IO:
+            rqueue.append(process)
+            print(f"time {time}ms: {process.sprint()} completed I/O; added to ready queue {rqueue}")
         elif event.etype == Event.CS_START: # the process has finished being loaded into the CPU
             burst_time = process.run_burst()
-            events.put(Event(process, time + burst_time, Event.CPU_BURST_END)) # TODO Last line written
-            print(f"time {time}ms: Process {process.pid} ({process.tau} {process.time}ms) started using the CPU for {burst_time}ms burst {rqueue}")
+            events.put(Event(process, time, burst_time, Event.CPU_BURST_END)) # TODO Last line written
+            print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
+
         elif event.etype == Event.CS_END:
-
+            in_use = False
         elif event.etype == Event.CPU_BURST_END:
+            if process.rbursts() == 0:
+                print(f"time {time}ms: Process {process.pid} terminated {rqueue}")
+                # Context switch to switch out of the CPU
+                events.put(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
+                continue
 
+            plural = "s" if process.rbursts() > 1 else ""
+            print(f"time {time}ms: {process.sprint()} completed a CPU burst; {process.rbursts()} burst{plural} to go {rqueue}")
 
-        sfj_event_handler(event)
+            # Calculating new tau
+            old_tau, new_tau = process.calc_new_tau(time, alpha, event.time)
+            print(f"time {time}ms: Recalculated tau for process {process.pid}: old tau {old_tau}ms; new tau {new_tau}ms {rqueue}")
+
+            # Switching out of the CPU
+            io_time = process.run_io() + math.ceil(tcs / 2) # adding in an end context switch
+            events.put(Event(process, time, io_time, Event.IO))
+            print(f"time {time}ms: Process {process.pid} switching out of CPU; will block on I/O until time {time + io_time}ms {rqueue}")
+
+            # Context switch to switch out of the CPU
+            events.put(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
+
+    print(f"time {time}ms: Simulator ended for SJF {rqueue}")
 
     return time
+def event_print(time, string):
+    DEBUG = 1000
+    if time < DEBUG: print(string)
 
 def print_pqueue(queue):
     sorted_array = []
@@ -274,7 +304,7 @@ def generate_processes(n, seed, l, upper_bound):
     srand48(seed)
     for i in range(n): # produce n processes
         pid = POSSIBLE_IDS[i]
-        arrival_time = math.floor(next_exp(l, upper_bound)) - 1 # step 1
+        arrival_time = math.floor(next_exp(l, upper_bound)) - 1 # step 1 #TODO not sure why there is a -1 here...
         cpu_bursts = math.ceil(drand48() * 100) # step 2
         burst_times = []
         io_times = []
