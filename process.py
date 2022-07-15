@@ -75,7 +75,7 @@ class Event():
         self.time = time
         self.etype = etype
     def __lt__(self, other):
-        return self.time < other.time
+        return self.start + self.time < other.start + other.time
     def __str__(self):
         string = f"EVENT: time: {self.start + self.time} start: {self.start} type: {self.etype}"
         return string
