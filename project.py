@@ -42,16 +42,16 @@ def main():
     print("\ntime 0ms: Simulator started for FCFS [Q: empty]")
     fcfs_return = fcfs(processes, tcs, n)
     print_fcfs(fcfs_return)
-    print(f"time {fcfs_return[0]}ms: Simulator ended for FCFS [Q: emtpy]\n")
+    print(f"time {fcfs_return[0]}ms: Simulator ended for FCFS [Q: empty]\n")
     processes = generate_processes(n, seed, l, upper_bound)
     sjf(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
     srt(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
-    print(f"time 0ms: Simulator started for RR with time slice {tslice}ms [Q: emtpy]")
+    print(f"time 0ms: Simulator started for RR with time slice {tslice}ms [Q: empty]")
     rr_return = rr(processes, tcs, tslice, n)
     print_rr(rr_return)
-    print(f"time {rr_return[0]}ms: Simulator ended for RR [Q: emtpy]")
+    print(f"time {rr_return[0]}ms: Simulator ended for RR [Q: empty]")
 
 def print_fcfs(fcfs_return):
     # return [time, avg_burst_time, avg_wait_time, avg_ta_time, context_switches, preemptions, cpu_utilization]
@@ -157,7 +157,7 @@ def sjf(processes, tcs, alpha): # TODO SJF
             process.finished_burst(time)
         elif event.etype == Event.CPU_BURST_END:
             if process.rbursts() == 0:
-                if time < 1000: print(f"time {time}ms: Process {process.pid} terminated {rqueue}")
+                print(f"time {time}ms: Process {process.pid} terminated {rqueue}")
                 # Context switch to switch out of the CPU
                 events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
                 process.set_finish_time(time)
@@ -367,7 +367,7 @@ def rr(processes, tcs, tslice, n):
 
             # check to see if process terminated
             if curr_p.remaining_bursts == 0:
-                if time < 1000: print(f"time {time}ms: Process {curr_p.pid} terminated {queue}")
+                print(f"time {time}ms: Process {curr_p.pid} terminated {queue}")
                 finished += 1
                 curr_p.set_finish_time(time)
                 time += int(tcs/2)   # remove process from CPU
