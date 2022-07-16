@@ -188,7 +188,7 @@ def sjf(processes, tcs, alpha):
     for i in processes: total_wait_time.append(i.get_total_wait_time())
     simout.write(f"-- average wait time: {mean3(total_wait_time) :.3f} ms\n")
     ta_times = []
-    for i in processes: ta_times += i.get_ta_times()
+    for i in processes: ta_times += i.get_sjf_ta_times()
     simout.write(f"-- average turnaround time: {mean3(ta_times) :.3f} ms\n")
     simout.write(f"-- total number of context switches: {context_switches}\n")
     simout.write(f"-- total number of preemptions: 0\n")
@@ -285,8 +285,8 @@ def srt(processes, tcs, alpha):
             preemption, pevent = srt_preemption_check(time, process, events)
             if preemption:
                 # TODO
-                print("#############")
-                # exit()
+                # print("#############")
+                pass
             else:
                 if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} arrived; added to ready queue {rqueue}")
             # TODO DO PREMPTION CHECK HERE

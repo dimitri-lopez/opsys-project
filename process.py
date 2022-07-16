@@ -18,6 +18,7 @@ class Process:
         self.wait_times = cpu_bursts*[0] # keeps track of the waiting time for each cpu burst (indices will match up with burst_times
         # self.wait_times = []
         self.ta_times = cpu_bursts*[0]               # keeps track of the turnaround time for each cpu burst (indices will match up with burst_times
+        self.sjf_ta_times = []
         self.queue_entry = 0             # keeps track of the time when process enters the queue (for wait time)
         self.ta_entry = 0                # keeps track of the time when the process enters the queue for the first time (for turnaround time)
         self.burst_start = 0             # keep track of time when burst starts
@@ -64,7 +65,7 @@ class Process:
         self.burst_start = time
 
     def finished_burst(self, time):
-        self.ta_times.append(time - self.burst_start)
+        self.sjf_ta_times.append(time - self.burst_start)
 
     def get_total_wait_time(self):
         total = 0
@@ -74,6 +75,8 @@ class Process:
 
     def get_ta_times(self):
         return self.ta_times
+    def get_sjf_ta_times(self):
+        return self.sjf_ta_times
 
     def set_finish_time(self, time):
         self.finish = time
