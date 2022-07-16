@@ -39,6 +39,7 @@ def main():
     processes = generate_processes(n, seed, l, upper_bound)
     for i in processes:
         print(i)
+    print("time 0ms: Simulator started for FCFS [Q: empty]")
     fcfs_return = fcfs(processes, tcs, n)
     print_fcfs(fcfs_return)
     print(f"time {fcfs_return[0]}ms: Simulator ended for FCFS [Q: emtpy]")
@@ -47,6 +48,7 @@ def main():
     processes = generate_processes(n, seed, l, upper_bound)
     srt(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
+    print(f"time 0ms: Simulator started for RR with time slice {tslice}ms [Q: emtpy]")
     rr_return = rr(processes, tcs, tslice, n)
     print_rr(rr_return)
     print(f"time {rr_return[0]}ms: Simulator ended for RR [Q: emtpy]")
@@ -212,7 +214,6 @@ def rr(processes, tcs, tslice, n):
     queue = Queue()
     io_block = []
     finished = 0
-    print(f"time {time}ms: Simulator started for RR with time slice {tslice}ms {queue}")
     process_queue = sort_by_arrival(processes)
     i = 0
     curr_p = process_queue[i]
@@ -221,12 +222,12 @@ def rr(processes, tcs, tslice, n):
     curr_p.set_ta_entry(time)
     queue.append(curr_p)
     print(f"time {time}ms: Process {curr_p.pid} arrived; added to ready queue {queue}")
-    time += int(tcs / 2)
-    curr_p = queue.pop(0)
-    context_switches += 1
+    curr_p = queue.pop(0)   # remove process from queue
+    time += int(tcs / 2)    # add process to CPU
+    context_switches += 1   # STATS
     next_p = None
     print(f"time {time}ms: Process {curr_p.pid} started using the CPU for {curr_p.burst_times[0]}ms burst {queue}")
-    burst_times.append(curr_p.burst_times[0])
+
     while finished < n:
         next_io = 2 ** 30
         next_arrival = 2 ** 30
@@ -246,7 +247,7 @@ def rr(processes, tcs, tslice, n):
                 # find next process that gets added to the queue and add it
                 if next_arrival < next_io:
                     time = next_arrival
-                    next_p.set_queue_entry(time)
+                    next_p.set_ta_entry(time)
                     queue.append(next_p)
                     print(f"time {time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
                     i += 1
@@ -254,25 +255,23 @@ def rr(processes, tcs, tslice, n):
                     time = next_io
                     io_p = io_block.pop(0)
                     io_p.reset_curr_io()
-                    io_p.set_queue_entry(time)
+                    io_p.set_ta_entry(time)
                     queue.append(io_p)
                     print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
+                # check if there is a tie
                 else:
                     if next_p.pid < io_block[0].pid:
                         time = next_arrival
-                        next_p.set_queue_entry(time)
                         next_p.set_ta_entry(time)
                         queue.append(next_p)
                         print(f"time {time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
                     else:
                         time = next_io
-                        io_p.set_queue_entry(time)
                         io_p.set_ta_entry(time)
                         queue.append(io_block.pop(0))
                         print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
             # now move the process from queue to CPU
             curr_p = queue.pop(0)
-            curr_p.set_queue_exit(time)
             time += int(tcs / 2)
             context_switches += 1
             # check to see if the current burst is already underway
@@ -304,18 +303,18 @@ def rr(processes, tcs, tslice, n):
         #
         ######### next process arrives #################
         if next_arrival < next_tslice and next_arrival < next_burst and next_arrival < next_io:
-            next_p.set_queue_entry(time)
-            next_p.set_ta_entry(time)
+            next_p.set_queue_entry(next_arrival)
+            next_p.set_ta_entry(next_arrival)
             queue.append(next_p)
             next_p = processes[i]
             i += 1
-            print(f"time {next_p.arrival_time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
+            print(f"time {next_arrival}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
 
         ###### I/O block process completes #######
         elif next_io < next_arrival and next_io < next_burst and next_io < next_tslice:
             io_process = io_block.pop(0)
-            io_process.set_queue_entry(time)
-            next_p.set_ta_entry(time)
+            io_process.set_queue_entry(next_io)
+            next_p.set_ta_entry(next_io)
             queue.append(io_process)
             print(f"time {next_io}ms: Process {io_process.pid} completed I/O; added to ready queue {queue}")
 
@@ -334,9 +333,9 @@ def rr(processes, tcs, tslice, n):
                 preemptions += 1
                 curr_p.set_queue_entry(time)
                 queue.append(curr_p)
+                curr_p = queue.pop(0)       # load up next process
+                curr_p.set_queue_exit(time) # end wait time counter
                 time += int(tcs / 2)       # switching in next process
-                curr_p = queue.pop(0)
-                curr_p.set_queue_exit(time)
 
                 # check to see if the current burst is already underway
                 current_burst_initial_time = curr_p.burst_times[curr_p.cpu_bursts - curr_p.remaining_bursts]
@@ -351,7 +350,8 @@ def rr(processes, tcs, tslice, n):
             burst_times.append(current_burst_initial_time)
             time += curr_p.curr_burst
             cpu_use_time += curr_p.curr_burst
-            curr_p.set_ta_exit(time+int(tcs/2))
+            exit_time = time+int(tcs/2)
+            curr_p.set_ta_exit(exit_time)
             curr_p.remaining_bursts -= 1
 
             # check to see if process terminated
@@ -360,7 +360,6 @@ def rr(processes, tcs, tslice, n):
                 finished += 1
                 curr_p.set_finish_time(time)
                 time += int(tcs/2)   # remove process from CPU
-                context_switches += 1
                 curr_p = None           # CPU has no process being run
 
             else:
@@ -369,7 +368,6 @@ def rr(processes, tcs, tslice, n):
                 print(f"time {time}ms: Process {curr_p.pid} switching out of CPU; ", end="")
                 time += int(tcs/2)
                 curr_p.set_io_exit(time)
-                context_switches += 1
                 print(f"will block on I/O until time {curr_p.curr_io}ms {queue}")
                 io_block.append(curr_p)
                 io_block = sort_io(io_block)
