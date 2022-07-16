@@ -536,7 +536,9 @@ def rr(processes, tcs, tslice, n):
 
             else:
                 curr_p.reset_curr_burst()
-                if time < DEBUG_TIME: print(f"time {time}ms: Process {curr_p.pid} completed a CPU burst; {curr_p.remaining_bursts} bursts to go {queue}")
+
+                plural = "" if curr_p.remaining_bursts == 1 else "s"
+                if time < DEBUG_TIME: print(f"time {time}ms: Process {curr_p.pid} completed a CPU burst; {curr_p.remaining_bursts} burst{plural} to go {queue}")
                 if time < DEBUG_TIME: print(f"time {time}ms: Process {curr_p.pid} switching out of CPU; ", end="")
                 time += int(tcs/2)
                 curr_p.set_io_exit(time)
