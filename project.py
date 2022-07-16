@@ -23,7 +23,7 @@ POSSIBLE_IDS = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 DEBUG_TIME = 1000
 
 def main():
-    assert(len(sys.argv) == 8)
+    assert(len(sys.argv) >= 8)
     n = int(sys.argv[1]);
     assert(1 <= n and n <= 26)
     seed = int(sys.argv[2]);
@@ -32,6 +32,8 @@ def main():
     tcs = int(sys.argv[5])     # context switch
     alpha = float(sys.argv[6]) # used to calculate new tau's
     tslice = int(sys.argv[7])
+    global DEBUG_TIME
+    DEBUG_TIME = 2**31 if sys.argv[8] == 'debug' else 1000
 
     # print("Read in arguments")
     simout = open("simout.txt", "a")
@@ -105,7 +107,8 @@ def fcfs(processes, tcs, n):
 def sjf(processes, tcs, alpha):
     # based on shortest anticipated CPU burst time
     events = SortedQueue(None) # Will store all the events
-    rqueue = SortedQueue(lambda process: (process.tau, process.pid)) # this will be our ready queue
+    # rqueue = SortedQueue(lambda process: (process.tau, process.pid)) # this will be our ready queue
+    rqueue = SortedQueue(lambda process: (process.tau)) # this will be our ready queue
 
     # Place arrival times in events
     for p in processes:
