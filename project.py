@@ -251,6 +251,16 @@ def srt_preemption_check(time, process, events):
     events.add(event)
 
     return (False, None)
+def srt_preemption(time, pevent, events, tcs):
+    # add back the cpu burst?
+    time_bursted = time - pevent.start
+    pevent.process.add_peemp()
+    pevent.process.preempted()
+    pevent.process.burst_times.insert(0, pevent.time - time_bursted)
+    # schedule cs_end
+    events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.CS_OUT))
+    events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.PREEMPT_QADD))
+    pevent.process.update_remaining_tau(time_bursted)
 
 def srt(processes, tcs, alpha):
     # based on shortest anticipated CPU burst time
@@ -299,16 +309,8 @@ def srt(processes, tcs, alpha):
             else: # TODO DO PREMPTION CHECK HERE
                 preemptions += 1
                 if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed I/O; preempting {pevent.process.pid} {rqueue}")
+                srt_preemption(time, pevent, events, tcs, tcs)
 
-                # add back the cpu burst?
-                time_bursted = time - pevent.start
-                pevent.process.add_peemp()
-                pevent.process.preempted()
-                pevent.process.burst_times.insert(0, pevent.time - time_bursted)
-                # schedule cs_end
-                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.CS_OUT))
-                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.PREEMPT_QADD))
-                pevent.process.update_remaining_tau(time_bursted)
         elif event.etype == Event.PREEMPT_QADD:
             rqueue.add(process)
             process.set_queue_entry(time) # Set queue entry time, used for getting the total waiting time
@@ -326,16 +328,8 @@ def srt(processes, tcs, alpha):
             else:
                 preemptions += 1
                 if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed I/O; preempting {pevent.process.pid} {rqueue}")
+                srt_preemption(time, pevent, events, tcs)
 
-                # add back the cpu burst?
-                time_bursted = time - pevent.start
-                pevent.process.add_peemp()
-                pevent.process.preempted()
-                pevent.process.burst_times.insert(0, pevent.time - time_bursted)
-                # schedule cs_end
-                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.CS_OUT))
-                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.PREEMPT_QADD))
-                pevent.process.update_remaining_tau(time_bursted)
         elif event.etype == Event.CS_IN: # the process has finished being loaded into the CPU
             burst_time = process.run_burst()
             events.add(Event(process, time, burst_time, Event.CPU_BURST_END))
@@ -348,16 +342,7 @@ def srt(processes, tcs, alpha):
             if preemption:
                 preemptions += 1
                 if time < DEBUG_TIME: print(f"time {time}ms: {rqueue[0].sprint()} will preempt {process.pid} {rqueue}")
-
-                # add back the cpu burst?
-                time_bursted = time - pevent.start
-                pevent.process.add_peemp()
-                pevent.process.preempted()
-                pevent.process.burst_times.insert(0, pevent.time - time_bursted)
-                # schedule cs_end
-                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.CS_OUT))
-                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.PREEMPT_QADD))
-                pevent.process.update_remaining_tau(time_bursted)
+                srt_preemption(time, pevent, events, tcs)
 
         elif event.etype == Event.PCS_IN:
             full_burst_time = process.get_full_burst_time()
