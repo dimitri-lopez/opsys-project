@@ -286,7 +286,7 @@ def srt(processes, tcs, alpha):
                 print("#############")
                 exit()
             else:
-                print(f"time {time}ms: {process.sprint()} arrived; added to ready queue {rqueue}")
+                if time < 1000: print(f"time {time}ms: {process.sprint()} arrived; added to ready queue {rqueue}")
             # TODO DO PREMPTION CHECK HERE
 
         elif event.etype == Event.IO:
@@ -297,7 +297,7 @@ def srt(processes, tcs, alpha):
             preemption, pevent = srt_preemption_check(time, process, events)
             if preemption:
                 preemptions += 1
-                print(f"time {time}ms: {process.sprint()} completed I/O; preempting {pevent.process.pid} {rqueue}")
+                if time < 1000: print(f"time {time}ms: {process.sprint()} completed I/O; preempting {pevent.process.pid} {rqueue}")
 
                 # add back the cpu burst?
                 time_bursted = time - pevent.start
@@ -308,11 +308,11 @@ def srt(processes, tcs, alpha):
                 events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.CS_END))
                 events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.PREEMPT_QADD))
             else:
-                print(f"time {time}ms: {process.sprint()} completed I/O; added to ready queue {rqueue}")
+                if time < 1000: print(f"time {time}ms: {process.sprint()} completed I/O; added to ready queue {rqueue}")
         elif event.etype == Event.CS_START: # the process has finished being loaded into the CPU
             burst_time = process.run_burst()
             events.add(Event(process, time, burst_time, Event.CPU_BURST_END)) # TODO Last line written
-            print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
+            if time < 1000: print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
 
             burst_times.append(burst_time) # STATS TODO this is so fucked lol
             context_switches += 1 # STATS
@@ -320,7 +320,7 @@ def srt(processes, tcs, alpha):
             full_burst_time = process.get_full_burst_time()
             remaining_time = process.run_burst()
             events.add(Event(process, time, remaining_time, Event.CPU_BURST_END)) # TODO Last line written
-            print(f"time {time}ms: {process.sprint()} started using the CPU for remaining {remaining_time}ms of {full_burst_time}ms burst {rqueue}")
+            if time < 1000: print(f"time {time}ms: {process.sprint()} started using the CPU for remaining {remaining_time}ms of {full_burst_time}ms burst {rqueue}")
 
             context_switches += 1 # STATS
 
@@ -339,33 +339,36 @@ def srt(processes, tcs, alpha):
                 continue
 
             plural = "s" if process.rbursts() > 1 else ""
-            print(f"time {time}ms: {process.sprint()} completed a CPU burst; {process.rbursts()} burst{plural} to go {rqueue}")
+            if time < 1000: print(f"time {time}ms: {process.sprint()} completed a CPU burst; {process.rbursts()} burst{plural} to go {rqueue}")
 
             # Calculating new tau
             old_tau, new_tau = process.calc_new_tau(time, alpha)
-            print(f"time {time}ms: Recalculated tau for process {process.pid}: old tau {old_tau}ms; new tau {new_tau}ms {rqueue}")
+            if time < 1000: print(f"time {time}ms: Recalculated tau for process {process.pid}: old tau {old_tau}ms; new tau {new_tau}ms {rqueue}")
 
             # Switching out of the CPU
             io_time = process.run_io() + math.ceil(tcs / 2) # adding in an end context switch
             events.add(Event(process, time, io_time, Event.IO))
-            print(f"time {time}ms: Process {process.pid} switching out of CPU; will block on I/O until time {time + io_time}ms {rqueue}")
+            if time < 1000: print(f"time {time}ms: Process {process.pid} switching out of CPU; will block on I/O until time {time + io_time}ms {rqueue}")
 
             # Context switch to switch out of the CPU
             events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
 
     print(f"time {time}ms: Simulator ended for SJF {rqueue}")
 
-
-    print(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms")
-    total_wait_time = []
-    for i in processes: total_wait_time.append(i.get_total_wait_time())
-    print(f"-- average wait time: {mean3(total_wait_time) :.3f} ms")
-    ta_times = []
-    for i in processes: ta_times += i.get_ta_times()
-    print(f"-- average turnaround time: {mean3(ta_times) :.3f} ms")
-    print(f"-- total number of context switches: {context_switches}")
-    print(f"-- total number of preemptions: 0")
-    print(f"-- CPU utilization: {round3(cpu_running / time * 100) :.3f}%") # TODO
+    original_stdout = sys.stdout
+    with open('simout.txt', 'w') as f:
+        sys.stdout = f  # Change the standard output to the file we created.
+        print(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms")
+        total_wait_time = []
+        for i in processes: total_wait_time.append(i.get_total_wait_time())
+        print(f"-- average wait time: {mean3(total_wait_time) :.3f} ms")
+        ta_times = []
+        for i in processes: ta_times += i.get_ta_times()
+        print(f"-- average turnaround time: {mean3(ta_times) :.3f} ms")
+        print(f"-- total number of context switches: {context_switches}")
+        print(f"-- total number of preemptions: 0")
+        print(f"-- CPU utilization: {round3(cpu_running / time * 100) :.3f}%") # TODO
+        sys.stdout = original_stdout
 
 
     return time
