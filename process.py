@@ -9,6 +9,8 @@ class Process:
         self.arrival_time = arrival_time # in miliseconds
         self.cpu_bursts = cpu_bursts     # number of bursts
         self.burst_times = burst_times   # how long each burst is
+        self.oburst_times = burst_times.copy()
+        self.num_preemp = 0
         self.io_times = io_times         # how long each IO is
         self.tau = math.ceil(1 / l)      # Initial tau value
         self.finish = None               # Finish time for the process
