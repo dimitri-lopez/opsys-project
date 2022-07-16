@@ -116,7 +116,7 @@ def sjf(processes, tcs, alpha):
     burst_times = []
     cpu_running = 0
     in_use = False
-    print(f"\ntime {time}ms: Simulator started for SJF {rqueue}")
+    print(f"time {time}ms: Simulator started for SJF {rqueue}")
     while events.size() != 0 or rqueue.size () != 0: # run until out of events
         peek_time = -1
         if events.size() != 0: peek_time = events.peek().get_time()
@@ -258,7 +258,7 @@ def srt(processes, tcs, alpha):
     cpu_running = 0
     preemptions = 0
     in_use = False
-    print(f"\ntime {time}ms: Simulator started for SRT {rqueue}")
+    print(f"time {time}ms: Simulator started for SRT {rqueue}")
     while events.size() != 0 or rqueue.size () != 0: # run until out of events
         peek_time = -1
         if events.size() != 0: peek_time = events.peek().get_time()
@@ -356,7 +356,7 @@ def srt(processes, tcs, alpha):
             # Context switch to switch out of the CPU
             events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
 
-    print(f"time {time}ms: Simulator ended for SRT {rqueue}")
+    print(f"time {time}ms: Simulator ended for SRT {rqueue}\n")
 
     # simout = open("simout.txt", "a")
     # simout.write(f"Algorithm SRT\n")
