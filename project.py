@@ -259,6 +259,7 @@ def srt(processes, tcs, alpha):
     preemptions = 0
     in_use = False
     print(f"time {time}ms: Simulator started for SRT {rqueue}")
+    # premptions happen whenever a process enters the queue
     while events.size() != 0 or rqueue.size () != 0: # run until out of events
         peek_time = -1
         if events.size() != 0: peek_time = events.peek().get_time()
