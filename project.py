@@ -317,7 +317,6 @@ def srt(processes, tcs, alpha):
             events.add(Event(process, time, burst_time, Event.CPU_BURST_END)) # TODO Last line written
             if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
 
-            burst_times.append(burst_time) # STATS TODO this is so fucked lol
             context_switches += 1 # STATS
         elif event.etype == Event.PCS_START:
             full_burst_time = process.get_full_burst_time()
@@ -333,6 +332,7 @@ def srt(processes, tcs, alpha):
         elif event.etype == Event.PREEMPT_QADD:
             rqueue.add(process)
         elif event.etype == Event.CPU_BURST_END:
+            burst_times.append(event.time) # STATS TODO this is so fucked lol
             cpu_running += event.time
             if process.rbursts() == 0:
                 print(f"time {time}ms: Process {process.pid} terminated {rqueue}")
@@ -360,16 +360,16 @@ def srt(processes, tcs, alpha):
 
     simout = open("simout.txt", "a")
     simout.write(f"Algorithm SRT\n")
-    simout.write(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms\n")
+    simout.write(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms\n") # DONE
     total_wait_time = []
     for i in processes: total_wait_time.append(i.get_total_wait_time())
-    simout.write(f"-- average wait time: {mean3(total_wait_time) :.3f} ms\n")
+    simout.write(f"-- average wait time: {mean3(total_wait_time) :.3f} ms\n") # DONE?
     ta_times = []
     for i in processes: ta_times += i.get_ta_times()
-    simout.write(f"-- average turnaround time: {mean3(ta_times) :.3f} ms\n")
-    simout.write(f"-- total number of context switches: {context_switches}\n")
-    simout.write(f"-- total number of preemptions: 0\n")
-    simout.write(f"-- CPU utilization: {round3(cpu_running / time * 100) :.3f}%\n")
+    simout.write(f"-- average turnaround time: {mean3(ta_times) :.3f} ms\n") # TODO
+    simout.write(f"-- total number of context switches: {context_switches}\n") # DONE
+    simout.write(f"-- total number of preemptions: {preemptions}\n") # DONE
+    simout.write(f"-- CPU utilization: {round3(cpu_running / time * 100) :.3f}%\n") # DONE
     simout.close()
 
 
