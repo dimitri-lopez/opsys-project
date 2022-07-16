@@ -426,6 +426,7 @@ def rr(processes, tcs, tslice, n):
                 if next_arrival < next_io:
                     time = next_arrival
                     next_p.set_ta_entry(time)
+                    next_p.set_queue_entry(time)
                     queue.append(next_p)
                     if time < DEBUG_TIME: print(f"time {time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
                     i += 1
@@ -434,6 +435,7 @@ def rr(processes, tcs, tslice, n):
                     io_p = io_block.pop(0)
                     io_p.reset_curr_io()
                     io_p.set_ta_entry(time)
+                    io_p.set_queue_entry(time)
                     queue.append(io_p)
                     if time < DEBUG_TIME: print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
                 # check if there is a tie
@@ -441,15 +443,18 @@ def rr(processes, tcs, tslice, n):
                     if next_p.pid < io_block[0].pid:
                         time = next_arrival
                         next_p.set_ta_entry(time)
+                        next_p.set_queue_entry(time)
                         queue.append(next_p)
                         if time < DEBUG_TIME: print(f"time {time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
                     else:
                         time = next_io
                         io_p.set_ta_entry(time)
+                        io_p.set_queue_entry(time)
                         queue.append(io_block.pop(0))
                         if time < DEBUG_TIME: print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
             # now move the process from queue to CPU
             curr_p = queue.pop(0)
+            curr_p.set_queue_exit(time)
             time += int(tcs / 2)
             context_switches += 1
             # check to see if the current burst is already underway
