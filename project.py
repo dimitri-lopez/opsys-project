@@ -251,9 +251,11 @@ def srt_preemption_check(time, process, events):
     events.add(event)
 
     return (False, None)
-def srt_preemption(time, pevent, events, tcs):
+def srt_preemption(time, pevent, events, cpu_running, burst_times, tcs):
     # add back the cpu burst?
     time_bursted = time - pevent.start
+    cpu_running[0] += time_bursted
+    # burst_times.append(time_bursted)
     pevent.process.add_peemp()
     pevent.process.preempted()
     pevent.process.burst_times.insert(0, pevent.time - time_bursted)
@@ -277,7 +279,7 @@ def srt(processes, tcs, alpha):
     # STAT COLLECTIONS
     context_switches = 0 # incremented at the start of every context switch
     burst_times = []     # collects the amount of time that each burst runs for
-    cpu_running = 0      # the total amount of time the cpu was running
+    cpu_running = [0]    # the total amount of time the cpu was running
     preemptions = 0      # total number of preemptions
 
     print(f"time {time}ms: Simulator started for SRT {rqueue}")
@@ -309,7 +311,7 @@ def srt(processes, tcs, alpha):
             else: # TODO DO PREMPTION CHECK HERE
                 preemptions += 1
                 if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed I/O; preempting {pevent.process.pid} {rqueue}")
-                srt_preemption(time, pevent, events, tcs, tcs)
+                srt_preemption(time, pevent, events, cpu_running, burst_times, tcs)
 
         elif event.etype == Event.PREEMPT_QADD:
             rqueue.add(process)
@@ -328,7 +330,7 @@ def srt(processes, tcs, alpha):
             else:
                 preemptions += 1
                 if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed I/O; preempting {pevent.process.pid} {rqueue}")
-                srt_preemption(time, pevent, events, tcs)
+                srt_preemption(time, pevent, events, cpu_running, burst_times, tcs)
 
         elif event.etype == Event.CS_IN: # the process has finished being loaded into the CPU
             burst_time = process.run_burst()
@@ -342,7 +344,7 @@ def srt(processes, tcs, alpha):
             if preemption:
                 preemptions += 1
                 if time < DEBUG_TIME: print(f"time {time}ms: {rqueue[0].sprint()} will preempt {process.pid} {rqueue}")
-                srt_preemption(time, pevent, events, tcs)
+                srt_preemption(time, pevent, events, cpu_running, burst_times, tcs)
 
         elif event.etype == Event.PCS_IN:
             full_burst_time = process.get_full_burst_time()
@@ -356,20 +358,11 @@ def srt(processes, tcs, alpha):
             if preemption:
                 preemptions += 1
                 if time < DEBUG_TIME: print(f"time {time}ms: {rqueue[0].sprint()} will preempt {process.pid} {rqueue}")
-
-                # add back the cpu burst?
-                time_bursted = time - pevent.start
-                pevent.process.add_peemp()
-                pevent.process.preempted()
-                pevent.process.burst_times.insert(0, pevent.time - time_bursted)
-                # schedule cs_end
-                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.CS_OUT))
-                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.PREEMPT_QADD))
-                pevent.process.update_remaining_tau(time_bursted)
+                srt_preemption(time, pevent, events, cpu_running, burst_times, tcs)
 
         elif event.etype == Event.CPU_BURST_END: # the process finished its cpu burst
-            cpu_running += event.time # STATS
-            burst_times.append(event.time) # STATS
+            cpu_running[0] += event.time # STATS
+            burst_times.append(process.get_other_burst_time()) # STATS
             process.set_ta_exit(time + math.ceil(tcs / 2)) # STATS
             if process.rbursts() == 0:
                 print(f"time {time}ms: Process {process.pid} terminated {rqueue}")
@@ -407,7 +400,7 @@ def srt(processes, tcs, alpha):
     simout.write(f"-- average turnaround time: {mean3(ta_times) :.3f} ms\n") # TODO
     simout.write(f"-- total number of context switches: {context_switches}\n") # DONE
     simout.write(f"-- total number of preemptions: {preemptions}\n") # DONE
-    simout.write(f"-- CPU utilization: {round3(cpu_running / time * 100) :.3f}%\n") # DONE
+    simout.write(f"-- CPU utilization: {round3(cpu_running[0] / time * 100) :.3f}%\n") # DONE
     simout.close()
 
 
