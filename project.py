@@ -39,19 +39,39 @@ def main():
     processes = generate_processes(n, seed, l, upper_bound)
     for i in processes:
         print(i)
-    fcfs_times = fcfs(processes, tcs, n)
-    fcfs_time = fcfs_times[0]
-    fcfs_cpu_use = fcfs_times[1]
-    print(f"time {fcfs_time}ms: Simulator ended for FCFS [Q: emtpy]")
+    fcfs_return = fcfs(processes, tcs, n)
+    print_fcfs(fcfs_return)
+    print(f"time {fcfs_return[0]}ms: Simulator ended for FCFS [Q: emtpy]")
     processes = generate_processes(n, seed, l, upper_bound)
     sjf(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
     srt(processes, tcs, alpha)
     processes = generate_processes(n, seed, l, upper_bound)
-    rr_times = rr(processes, tcs, tslice, n)
-    rr_time = rr_times[0]
-    rr_cpu_use = rr_times[1]
-    print(f"time {rr_time}ms: Simulator ended for RR [Q: emtpy]")
+    rr_return = rr(processes, tcs, tslice, n)
+    print_rr(rr_return)
+    print(f"time {rr_return[0]}ms: Simulator ended for RR [Q: emtpy]")
+
+def print_fcfs(fcfs_return):
+    # return [time, avg_burst_time, avg_wait_time, avg_ta_time, context_switches, preemptions, cpu_utilization]
+    #            0               1              2            3                 4            5                6
+    print(f"Algorithm FCFS")
+    print(f"-- average CPU burst time: {fcfs_return[1] :.3f} ms")
+    print(f"-- average wait time: {fcfs_return[2] :.3f} ms")
+    print(f"-- average turnaround time: {fcfs_return[3] :.3f} ms")
+    print(f"-- total number of context switches: {fcfs_return[4]}")
+    print(f"-- total number of preemptions: {fcfs_return[5]}")
+    print(f"-- CPU utilization: {fcfs_return[6] :.3f}%")
+
+def print_rr(rr_return):
+    # return [time, avg_burst_time, avg_wait_time, avg_ta_time, context_switches, preemptions, cpu_utilization]
+    #            0               1              2            3                 4            5                6
+    print(f"Algorithm RR")
+    print(f"-- average CPU burst time: {rr_return[1] :.3f} ms")
+    print(f"-- average wait time: {rr_return[2] :.3f} ms")
+    print(f"-- average turnaround time: {rr_return[3] :.3f} ms")
+    print(f"-- total number of context switches: {rr_return[4]}")
+    print(f"-- total number of preemptions: {rr_return[5]}")
+    print(f"-- CPU utilization: {rr_return[6] :.3f}%")
 
 def sort_by_arrival(processes):
     processes.sort(key=lambda x: x.arrival_time)
@@ -171,7 +191,10 @@ def round3(num):
 def mean(nums):
     total = 0
     for i in nums: total += i
-    return total / len(nums)
+    if len(nums) > 0:
+        return total / len(nums)
+    else:
+        return 0
 
 def event_print(time, string):
     DEBUG = 1000
@@ -352,20 +375,24 @@ def rr(processes, tcs, tslice, n):
                 io_block = sort_io(io_block)
                 curr_p = None
 
-    print(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms")
+    # print(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms")
+    avg_burst_time = mean3(burst_times)
     total_wait_time = []
     for i in processes:
         total_wait_time.append(i.get_total_wait_time())
-    print(f"-- average wait time: {mean3(total_wait_time) :.3f} ms")
+    # print(f"-- average wait time: {mean3(total_wait_time) :.3f} ms")
+    avg_wait_time = mean3(total_wait_time)
     ta_times = []
     for i in processes:
         ta_times += i.get_ta_times()
-    print(f"-- average turnaround time: {mean3(ta_times) :.3f} ms")
-    print(f"-- total number of context switches: {context_switches}")
-    print(f"-- total number of preemptions: {preemptions}")
-    print(f"-- CPU utilization: {round3(cpu_use_time / time * 100) :.3f}%")
+    # print(f"-- average turnaround time: {mean3(ta_times) :.3f} ms")
+    avg_ta_time = mean3(ta_times)
+    # print(f"-- total number of context switches: {context_switches}")
+    # print(f"-- total number of preemptions: {preemptions}")
+    # print(f"-- CPU utilization: {round3(cpu_use_time / time * 100) :.3f}%")
+    cpu_utilization = round3(cpu_use_time / time * 100)
 
-    return [time, cpu_use_time]
+    return [time, avg_burst_time, avg_wait_time, avg_ta_time, context_switches, preemptions, cpu_utilization]
 
 
 # Exponential Distribution
