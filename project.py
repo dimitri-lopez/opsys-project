@@ -365,7 +365,7 @@ def srt(processes, tcs, alpha):
     for i in processes: total_wait_time.append(i.get_total_wait_time())
     simout.write(f"-- average wait time: {mean3(total_wait_time) :.3f} ms\n") # DONE?
     ta_times = []
-    for i in processes: ta_times += i.get_ta_times()
+    for i in processes: ta_times += i.get_sjf_ta_times()
     simout.write(f"-- average turnaround time: {mean3(ta_times) :.3f} ms\n") # TODO
     simout.write(f"-- total number of context switches: {context_switches}\n") # DONE
     simout.write(f"-- total number of preemptions: {preemptions}\n") # DONE
