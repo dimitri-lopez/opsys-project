@@ -9,6 +9,8 @@ class Process:
         self.arrival_time = arrival_time # in miliseconds
         self.cpu_bursts = cpu_bursts     # number of bursts
         self.burst_times = burst_times   # how long each burst is
+        self.oburst_times = burst_times.copy()
+        self.num_preemp = 0
         self.io_times = io_times         # how long each IO is
         self.tau = math.ceil(1 / l)      # Initial tau value
         self.finish = None               # Finish time for the process
@@ -23,7 +25,22 @@ class Process:
             self.curr_io = io_times[0]   # I/O end time for current burst (time+io_time)
 
         self.remaining_bursts = self.cpu_bursts
+        self.was_preempted = False
 
+    def get_full_burst_time(self):
+        return self.oburst_times [self.cpu_bursts - self.rbursts()]
+
+    def add_context_switch(self):
+        self.num_cs += 1
+
+    def preempted(self):
+        self.was_preempted = True
+
+    def add_peemp(self):
+        self.num_preemp += 1
+
+    def get_index(self):
+        self.cpu_bursts - len(self.cpu_bursts)
     def set_ta_entry(self, time):
         self.ta_entry = time
 
@@ -72,6 +89,7 @@ class Process:
             self.curr_io = self.io_times[index]
 
     def run_burst(self):
+        self.was_preempted = False
         return self.burst_times.pop(0)
 
     def run_io(self):
@@ -94,8 +112,8 @@ class Process:
 
     def sprint(self):
         return f"Process {self.pid} (tau {self.tau}ms)"
-
-    def calc_new_tau(self, curr_time, alpha, time):
+    def calc_new_tau(self, curr_time, alpha, time = None):
+        if time is None: time = self.oburst_times [self.cpu_bursts - self.rbursts() - 1]
         old_tau = self.tau
         self.tau = math.ceil(alpha * time + (1 - alpha) * old_tau)
         return[old_tau, self.tau]
@@ -108,8 +126,10 @@ class Process:
 
 class Event:
     CPU_BURST_END = 0
-    CS_START = 2.1 # TODO Not sure what these values should be
+    PCS_START = 2.10 # TODO Not sure what these values should be
+    CS_START = 2.11 # TODO Not sure what these values should be
     CS_END = 2.2
+    PREEMPT_QADD = 2.3
     IO = 3 # IO COMPLETION
     ARRIVAL = 4
     # PREMPTION = "PREMPTION"
@@ -131,7 +151,7 @@ class Event:
         return self.get_time() < other.get_time()
 
     def __str__(self):
-        string = f"EVENT: time: {self.start + self.time} start: {self.start} type: {self.etype}"
+        string = f"EVENT: time: {self.time} start: {self.start} end: {self.get_time()} type: {self.etype} process: {self.process.sprint()}"
         return string
 
     def __repr__(self):
