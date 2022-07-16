@@ -33,7 +33,8 @@ def main():
     alpha = float(sys.argv[6]) # used to calculate new tau's
     tslice = int(sys.argv[7])
     global DEBUG_TIME
-    DEBUG_TIME = 2**31 if sys.argv[8] == 'debug' else 1000
+    DEBUG_TIME = 1000
+    if len(sys.argv) == 9 and sys.argv[8] == 'debug': DEBUG_TIME = 2<<31
 
     # print("Read in arguments")
     simout = open("simout.txt", "a")
