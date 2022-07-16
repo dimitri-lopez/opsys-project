@@ -40,6 +40,9 @@ class SortedQueue():
 
     def pop(self, index = 0):
         return self.queue.pop(index)
+    def get_next_time(self):
+        if len(self.queue) == 0: return -1
+        else: return self.queue[0].get_time()
     def peek(self):
         return self.queue[0]
 

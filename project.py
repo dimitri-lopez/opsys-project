@@ -108,64 +108,57 @@ def fcfs(processes, tcs, n):
 def sjf(processes, tcs, alpha):
     # based on shortest anticipated CPU burst time
     events = SortedQueue(None) # Will store all the events
-    # rqueue = SortedQueue(lambda process: (process.tau, process.pid)) # this will be our ready queue
-    rqueue = SortedQueue(lambda process: (process.tau)) # this will be our ready queue
+    rqueue = SortedQueue(lambda process: (process.tau, process.pid)) # this will be our ready queue
 
     # Place arrival times in events
     for p in processes:
         events.add(Event(p, 0, p.arrival_time, Event.ARRIVAL))
 
     time = 0
-    context_switches = 0 # STATS
-    burst_times = []
-    cpu_running = 0
-    in_use = False
+    in_use = False # whether or not the CPU is in use
+
+    # STAT COLLECTIONS
+    context_switches = 0 # incremented at the start of every context switch
+    burst_times = []     # collects the amount of time that each burst runs for
+    cpu_running = 0      # the total amount of time the cpu was running
+
     print(f"time {time}ms: Simulator started for SJF {rqueue}")
     while events.size() != 0 or rqueue.size () != 0: # run until out of events
-        peek_time = -1
-        if events.size() != 0: peek_time = events.peek().get_time()
-        if time != peek_time and in_use == False and rqueue.size() != 0: # cpu not in use, start a new process
+        # cpu not in use, start a new process
+        if time != events.get_next_time() and not in_use and rqueue.size() != 0:
             process = rqueue.pop()
-            events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_START)) # add half a context switch
-            process.set_queue_exit(time) # STATS
-            process.started_burst(time)
-            in_use = True
+            events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_IN)) # add half a context switch
+            process.set_queue_exit(time) # TODO
+            process.started_burst(time) # TODO
+            in_use = True # TODO
             continue
-        event = events.pop() # pop from heap
-        time = event.start + event.time
-        process = event.process
-        # print(f"\ttime: {time} event: {event} process: {process.sprint()}") # DEBUGGING
+        event = events.pop()     # get the next event
+        time = event.get_time()  # get the new time
+        process = event.process  # get the current process
 
-        # if time > 3000: break # DEBUG
-
-        if   event.etype == Event.ARRIVAL:
+        if   event.etype == Event.ARRIVAL:  # a process has arrived
             rqueue.add(process)
             if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} arrived; added to ready queue {rqueue}")
 
-            process.set_queue_entry(time) # STATS
-        elif event.etype == Event.IO:
+            process.set_queue_entry(time) # TODO
+        elif event.etype == Event.IO: # a process finished IO blocking, enters the ready queue
             rqueue.add(process)
             if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed I/O; added to ready queue {rqueue}")
-            process.set_queue_entry(time) # STATS
-        elif event.etype == Event.CS_START: # the process has finished being loaded into the CPU
+
+            process.set_queue_entry(time) # Set queue entry time, used for gettting the total amount of waiting time
+        elif event.etype == Event.CS_IN: # the process has finished being loaded into the CPU
             burst_time = process.run_burst()
             events.add(Event(process, time, burst_time, Event.CPU_BURST_END)) # TODO Last line written
-            cpu_running += burst_time
             if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
 
             burst_times.append(burst_time) # STATS
             context_switches += 1 # STATS
-
-
-        elif event.etype == Event.CS_END:
-            in_use = False
-            process.finished_burst(time)
-        elif event.etype == Event.CPU_BURST_END:
-            if process.rbursts() == 0:
-                print(f"time {time}ms: Process {process.pid} terminated {rqueue}")
-                # Context switch to switch out of the CPU
-                events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
-                process.set_finish_time(time)
+        elif event.etype == Event.CPU_BURST_END: # the process finished its cpu burst
+            cpu_running += event.time # STATS
+            if process.rbursts() == 0: # process finished its last CPU burst
+                print(f"time {time}ms: Process {process.pid} terminated {rqueue}") # always gets printed
+                events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_OUT)) # switch out of cpu
+                process.set_finish_time(time) # process has finished
                 continue
 
             plural = "s" if process.rbursts() > 1 else ""
@@ -180,11 +173,14 @@ def sjf(processes, tcs, alpha):
             events.add(Event(process, time, io_time, Event.IO))
             if time < DEBUG_TIME: print(f"time {time}ms: Process {process.pid} switching out of CPU; will block on I/O until time {time + io_time}ms {rqueue}")
 
-            # Context switch to switch out of the CPU
-            events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
+            events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_OUT)) # move process out of CPU
+        elif event.etype == Event.CS_OUT: # the process is being moved out of the CPU
+            in_use = False # cpu no longer being used
+            process.finished_burst(time) # STATS
 
     print(f"time {time}ms: Simulator ended for SJF {rqueue}\n")
 
+    # Statistics Calculations
     simout = open("simout.txt", "a")
     simout.write(f"Algorithm SJF\n")
     simout.write(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms\n")
@@ -270,9 +266,9 @@ def srt(processes, tcs, alpha):
         if time != peek_time and in_use == False and rqueue.size() != 0: # cpu not in use, start a new process
             process = rqueue.pop()
             if process.was_preempted == True:
-                events.add(Event(process, time, math.ceil(tcs / 2), Event.PCS_START)) # add half a context switch
+                events.add(Event(process, time, math.ceil(tcs / 2), Event.PCS_IN)) # add half a context switch
             else:
-                events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_START)) # add half a context switch
+                events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_IN)) # add half a context switch
                 process.set_queue_exit(time) # STATS
                 process.started_burst(time)
             in_use = True
@@ -312,18 +308,18 @@ def srt(processes, tcs, alpha):
                 pevent.process.preempted()
                 pevent.process.burst_times.insert(0, pevent.time - time_bursted)
                 # schedule cs_end
-                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.CS_END))
+                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.CS_OUT))
                 events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.PREEMPT_QADD))
                 pevent.process.update_remaining_tau(time_bursted)
             else:
                 if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed I/O; added to ready queue {rqueue}")
-        elif event.etype == Event.CS_START: # the process has finished being loaded into the CPU
+        elif event.etype == Event.CS_IN: # the process has finished being loaded into the CPU
             burst_time = process.run_burst()
             events.add(Event(process, time, burst_time, Event.CPU_BURST_END)) # TODO Last line written
             if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
 
             context_switches += 1 # STATS
-        elif event.etype == Event.PCS_START:
+        elif event.etype == Event.PCS_IN:
             full_burst_time = process.get_full_burst_time()
             remaining_time = process.run_burst()
             events.add(Event(process, time, remaining_time, Event.CPU_BURST_END)) # TODO Last line written
@@ -331,7 +327,7 @@ def srt(processes, tcs, alpha):
 
             context_switches += 1 # STATS
 
-        elif event.etype == Event.CS_END:
+        elif event.etype == Event.CS_OUT:
             in_use = False
             process.finished_burst(time)
         elif event.etype == Event.PREEMPT_QADD:
@@ -342,7 +338,7 @@ def srt(processes, tcs, alpha):
             if process.rbursts() == 0:
                 print(f"time {time}ms: Process {process.pid} terminated {rqueue}")
                 # Context switch to switch out of the CPU
-                events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
+                events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_OUT))
                 process.set_finish_time(time)
                 continue
 
@@ -359,7 +355,7 @@ def srt(processes, tcs, alpha):
             if time < DEBUG_TIME: print(f"time {time}ms: Process {process.pid} switching out of CPU; will block on I/O until time {time + io_time}ms {rqueue}")
 
             # Context switch to switch out of the CPU
-            events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
+            events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_OUT))
 
     print(f"time {time}ms: Simulator ended for SRT {rqueue}\n")
 

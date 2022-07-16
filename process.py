@@ -55,9 +55,11 @@ class Process:
         self.ta_times[self.cpu_bursts - self.remaining_bursts] += (time - self.ta_entry)
 
     def set_queue_entry(self, time):
+        # Gets called everytime a process enters a queue. Used for calculating statistics
         self.queue_entry = time
 
     def set_queue_exit(self, time):
+        # Gets called everytime a process exits a queue. Used for calculating statistics
         self.wait_times[self.cpu_bursts-self.remaining_bursts] += (time-self.queue_entry)
         # self.wait_times.append(time - self.queue_entry)
 
@@ -136,9 +138,9 @@ class Process:
 
 class Event:
     CPU_BURST_END = 0
-    PCS_START = 2.10 # TODO Not sure what these values should be
-    CS_START = 2.11 # TODO Not sure what these values should be
-    CS_END = 2.2
+    PCS_IN = 2.10 # TODO Not sure what these values should be
+    CS_IN = 2.11 # TODO Not sure what these values should be
+    CS_OUT = 2.2
     PREEMPT_QADD = 2.3
     IO = 3 # IO COMPLETION
     ARRIVAL = 4
