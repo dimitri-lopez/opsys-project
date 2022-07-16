@@ -34,7 +34,7 @@ def main():
     tslice = int(sys.argv[7])
 
     # print("Read in arguments")
-
+    simout = open("simout.txt", "a")
     # the pdf says to "reset" the simulation after each method and regenerate stuff.
     # I don't think generating the processes again is really needed, but we will see
     processes = generate_processes(n, seed, l, upper_bound)
@@ -57,33 +57,33 @@ def main():
 def print_fcfs(fcfs_return):
     # return [time, avg_burst_time, avg_wait_time, avg_ta_time, context_switches, preemptions, cpu_utilization]
     #            0               1              2            3                 4            5                6
-    original_stdout = sys.stdout
-    with open('simout.txt', 'w') as f:
-        sys.stdout = f  # Change the standard output to the file we created.
-        print(f"Algorithm FCFS")
-        print(f"-- average CPU burst time: {fcfs_return[1] :.3f} ms")
-        print(f"-- average wait time: {fcfs_return[2] :.3f} ms")
-        print(f"-- average turnaround time: {fcfs_return[3] :.3f} ms")
-        print(f"-- total number of context switches: {fcfs_return[4]}")
-        print(f"-- total number of preemptions: {fcfs_return[5]}")
-        print(f"-- CPU utilization: {fcfs_return[6] :.3f}%")
-        sys.stdout = original_stdout  # Reset the standard output to its original value
+    simout = open("simout.txt", "w")
+    simout.write(f"Algorithm FCFS\n")
+    simout.close()
+    simout = open("simout.txt", "a")
+    simout.write(f"-- average CPU burst time: {fcfs_return[1] :.3f} ms\n")
+    simout.write(f"-- average wait time: {fcfs_return[2] :.3f} ms\n")
+    simout.write(f"-- average turnaround time: {fcfs_return[3] :.3f} ms\n")
+    simout.write(f"-- total number of context switches: {fcfs_return[4]}\n")
+    simout.write(f"-- total number of preemptions: {fcfs_return[5]}\n")
+    simout.write(f"-- CPU utilization: {fcfs_return[6] :.3f}%\n")
+    simout.close()
+
 
 
 def print_rr(rr_return):
     # return [time, avg_burst_time, avg_wait_time, avg_ta_time, context_switches, preemptions, cpu_utilization]
     #            0               1              2            3                 4            5                6
-    original_stdout = sys.stdout
-    with open('simout.txt', 'w') as f:
-        sys.stdout = f  # Change the standard output to the file we created.
-        print(f"Algorithm RR")
-        print(f"-- average CPU burst time: {rr_return[1] :.3f} ms")
-        print(f"-- average wait time: {rr_return[2] :.3f} ms")
-        print(f"-- average turnaround time: {rr_return[3] :.3f} ms")
-        print(f"-- total number of context switches: {rr_return[4]}")
-        print(f"-- total number of preemptions: {rr_return[5]}")
-        print(f"-- CPU utilization: {rr_return[6] :.3f}%")
-        sys.stdout = original_stdout
+    simout = open("simout.txt", "a")
+    simout.write(f"Algorithm RR\n")
+    simout.write(f"-- average CPU burst time: {rr_return[1] :.3f} ms\n")
+    simout.write(f"-- average wait time: {rr_return[2] :.3f} ms\n")
+    simout.write(f"-- average turnaround time: {rr_return[3] :.3f} ms\n")
+    simout.write(f"-- total number of context switches: {rr_return[4]}\n")
+    simout.write(f"-- total number of preemptions: {rr_return[5]}\n")
+    simout.write(f"-- CPU utilization: {rr_return[6] :.3f}%\n")
+    simout.close()
+
 
 def sort_by_arrival(processes):
     processes.sort(key=lambda x: x.arrival_time)
@@ -102,7 +102,7 @@ def fcfs(processes, tcs, n):
     time = rr(processes, tcs, 2**31-1, n)
     return time
 
-def sjf(processes, tcs, alpha):
+def sjf(processes, tcs, alpha, simout):
     # based on shortest anticipated CPU burst time
     events = SortedQueue(None) # Will store all the events
     rqueue = SortedQueue(lambda process: (process.tau, process.pid)) # this will be our ready queue
@@ -181,20 +181,20 @@ def sjf(processes, tcs, alpha):
 
     print(f"time {time}ms: Simulator ended for SJF {rqueue}\n")
 
-    original_stdout = sys.stdout
-    with open('simout.txt', 'w') as f:
-        sys.stdout = f  # Change the standard output to the file we created.
-        print(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms")
-        total_wait_time = []
-        for i in processes: total_wait_time.append(i.get_total_wait_time())
-        print(f"-- average wait time: {mean3(total_wait_time) :.3f} ms")
-        ta_times = []
-        for i in processes: ta_times += i.get_ta_times()
-        print(f"-- average turnaround time: {mean3(ta_times) :.3f} ms")
-        print(f"-- total number of context switches: {context_switches}")
-        print(f"-- total number of preemptions: 0")
-        print(f"-- CPU utilization: {round3(cpu_running / time * 100) :.3f}%") # TODO
-        sys.stdout = original_stdout
+    simout = open("simout.txt", "a")
+    simout.write(f"Algorithm SJF\n")
+    print(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms\n")
+    total_wait_time = []
+    for i in processes: total_wait_time.append(i.get_total_wait_time())
+    print(f"-- average wait time: {mean3(total_wait_time) :.3f} ms\n")
+    ta_times = []
+    for i in processes: ta_times += i.get_ta_times()
+    print(f"-- average turnaround time: {mean3(ta_times) :.3f} ms\n")
+    print(f"-- total number of context switches: {context_switches}\n")
+    print(f"-- total number of preemptions: 0\n")
+    print(f"-- CPU utilization: {round3(cpu_running / time * 100) :.3f}%\n")
+    simout.close()
+
 
 
     return time
@@ -354,19 +354,21 @@ def srt(processes, tcs, alpha):
             # Context switch to switch out of the CPU
             events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
 
-    print(f"time {time}ms: Simulator ended for SJF {rqueue}")
+    print(f"time {time}ms: Simulator ended for SRT {rqueue}")
 
-
-    # print(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms")
+    # simout = open("simout.txt", "a")
+    # simout.write(f"Algorithm SRT\n")
+    # simout.write(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms\n")
     # total_wait_time = []
     # for i in processes: total_wait_time.append(i.get_total_wait_time())
-    # print(f"-- average wait time: {mean3(total_wait_time) :.3f} ms")
+    # simout.write(f"-- average wait time: {mean3(total_wait_time) :.3f} ms\n")
     # ta_times = []
     # for i in processes: ta_times += i.get_ta_times()
-    # print(f"-- average turnaround time: {mean3(ta_times) :.3f} ms")
-    # print(f"-- total number of context switches: {context_switches}")
-    # print(f"-- total number of preemptions: 0")
-    # print(f"-- CPU utilization: {round3(cpu_running / time * 100) :.3f}%") # TODO
+    # simout.write(f"-- average turnaround time: {mean3(ta_times) :.3f} ms\n")
+    # simout.write(f"-- total number of context switches: {context_switches}\n")
+    # simout.write(f"-- total number of preemptions: 0\n")
+    # simout.write(f"-- CPU utilization: {round3(cpu_running / time * 100) :.3f}%\n")
+    # simout.close()
 
 
     return time
