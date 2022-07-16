@@ -26,9 +26,15 @@ class Process:
 
         self.remaining_bursts = self.cpu_bursts
         self.was_preempted = False
+        self.remaining_tau = self.tau
 
     def get_full_burst_time(self):
         return self.oburst_times [self.cpu_bursts - self.rbursts()]
+    def get_other_burst_time(self):
+        return self.oburst_times [self.cpu_bursts - self.rbursts() - 1]
+    def update_remaining_tau(self, time):
+        self.remaining_tau -= time
+
 
     def add_context_switch(self):
         self.num_cs += 1
@@ -116,6 +122,7 @@ class Process:
         if time is None: time = self.oburst_times [self.cpu_bursts - self.rbursts() - 1]
         old_tau = self.tau
         self.tau = math.ceil(alpha * time + (1 - alpha) * old_tau)
+        self.remaining_tau = self.tau
         return[old_tau, self.tau]
 
     # def reset_process(self):

@@ -229,7 +229,8 @@ def srt_preemption_check(time, process, events):
     event = events.pop(ievent)
 
     time_ran = time - event.start
-    remaining_time = event.process.tau - time_ran
+    previous_times = event.process.get_other_burst_time() - event.time
+    remaining_time = event.process.tau - time_ran - previous_times
     # print(f"\t CPU BURST process: {process.sprint()} time: {time} burst: {event}")
 
     if process.tau <= remaining_time:
@@ -245,7 +246,7 @@ def srt_preemption_check(time, process, events):
 def srt(processes, tcs, alpha):
     # based on shortest anticipated CPU burst time
     events = SortedQueue(None) # Will store all the events
-    rqueue = SortedQueue(lambda process: (process.tau, process.pid)) # this will be our ready queue
+    rqueue = SortedQueue(lambda process: (process.remaining_tau, process.pid)) # this will be our ready queue
 
     # Place arrival times in events
     for p in processes:
@@ -308,6 +309,7 @@ def srt(processes, tcs, alpha):
                 # schedule cs_end
                 events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.CS_END))
                 events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.PREEMPT_QADD))
+                pevent.process.update_remaining_tau(time_bursted)
             else:
                 if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed I/O; added to ready queue {rqueue}")
         elif event.etype == Event.CS_START: # the process has finished being loaded into the CPU
@@ -354,7 +356,7 @@ def srt(processes, tcs, alpha):
             # Context switch to switch out of the CPU
             events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
 
-    print(f"time {time}ms: Simulator ended for SJF {rqueue}")
+    print(f"time {time}ms: Simulator ended for SRT {rqueue}")
 
 
     # print(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms")
