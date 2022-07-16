@@ -20,6 +20,7 @@ from process import *
 from c_queue import *
 
 POSSIBLE_IDS = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+DEBUG_TIME = 1000
 
 def main():
     assert(len(sys.argv) == 8)
@@ -135,18 +136,18 @@ def sjf(processes, tcs, alpha):
 
         if   event.etype == Event.ARRIVAL:
             rqueue.add(process)
-            if time < 1000: print(f"time {time}ms: {process.sprint()} arrived; added to ready queue {rqueue}")
+            if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} arrived; added to ready queue {rqueue}")
 
             process.set_queue_entry(time) # STATS
         elif event.etype == Event.IO:
             rqueue.add(process)
-            if time < 1000: print(f"time {time}ms: {process.sprint()} completed I/O; added to ready queue {rqueue}")
+            if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed I/O; added to ready queue {rqueue}")
             process.set_queue_entry(time) # STATS
         elif event.etype == Event.CS_START: # the process has finished being loaded into the CPU
             burst_time = process.run_burst()
             events.add(Event(process, time, burst_time, Event.CPU_BURST_END)) # TODO Last line written
             cpu_running += burst_time
-            if time < 1000: print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
+            if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
 
             burst_times.append(burst_time) # STATS
             context_switches += 1 # STATS
@@ -164,16 +165,16 @@ def sjf(processes, tcs, alpha):
                 continue
 
             plural = "s" if process.rbursts() > 1 else ""
-            if time < 1000: print(f"time {time}ms: {process.sprint()} completed a CPU burst; {process.rbursts()} burst{plural} to go {rqueue}")
+            if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed a CPU burst; {process.rbursts()} burst{plural} to go {rqueue}")
 
             # Calculating new tau
             old_tau, new_tau = process.calc_new_tau(time, alpha, event.time)
-            if time < 1000: print(f"time {time}ms: Recalculated tau for process {process.pid}: old tau {old_tau}ms; new tau {new_tau}ms {rqueue}")
+            if time < DEBUG_TIME: print(f"time {time}ms: Recalculated tau for process {process.pid}: old tau {old_tau}ms; new tau {new_tau}ms {rqueue}")
 
             # Switching out of the CPU
             io_time = process.run_io() + math.ceil(tcs / 2) # adding in an end context switch
             events.add(Event(process, time, io_time, Event.IO))
-            if time < 1000: print(f"time {time}ms: Process {process.pid} switching out of CPU; will block on I/O until time {time + io_time}ms {rqueue}")
+            if time < DEBUG_TIME: print(f"time {time}ms: Process {process.pid} switching out of CPU; will block on I/O until time {time + io_time}ms {rqueue}")
 
             # Context switch to switch out of the CPU
             events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
@@ -201,7 +202,7 @@ def sjf(processes, tcs, alpha):
 def mean3(nums):
     return round3(mean(nums))
 def round3(num):
-    return math.ceil(num * 1000) / 1000
+    return math.ceil(num * DEBUG_TIME) / DEBUG_TIME
 def mean(nums):
     total = 0
     for i in nums: total += i
@@ -211,7 +212,7 @@ def mean(nums):
         return 0
 
 def event_print(time, string):
-    DEBUG = 1000
+    DEBUG = DEBUG_TIME
     if time < DEBUG: print(string)
 # processes, tcs, alpha, time, context_switches, preemptions
 
@@ -232,8 +233,8 @@ def srt_preemption_check(time, process, events):
     # print(f"\t CPU BURST process: {process.sprint()} time: {time} burst: {event}")
 
     if process.tau <= remaining_time:
-        print(f"\t process.tau: {process.tau} remaining_time: {remaining_time}")
-        print(f"\t FOUND A PREEMPTION process: {process.sprint()} time: {time} burst: {event} remaining_time: {remaining_time}")
+        # print(f"\t process.tau: {process.tau} remaining_time: {remaining_time}")
+        # print(f"\t FOUND A PREEMPTION process: {process.sprint()} time: {time} burst: {event} remaining_time: {remaining_time}")
         # print(f"\t FOUND A PREEMPTION process: {process.sprint()} time: {time} burst: {event} remaining_time: {remaining_time}")
         return (True, event)
 
@@ -284,9 +285,9 @@ def srt(processes, tcs, alpha):
             if preemption:
                 # TODO
                 print("#############")
-                exit()
+                # exit()
             else:
-                if time < 1000: print(f"time {time}ms: {process.sprint()} arrived; added to ready queue {rqueue}")
+                if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} arrived; added to ready queue {rqueue}")
             # TODO DO PREMPTION CHECK HERE
 
         elif event.etype == Event.IO:
@@ -297,7 +298,7 @@ def srt(processes, tcs, alpha):
             preemption, pevent = srt_preemption_check(time, process, events)
             if preemption:
                 preemptions += 1
-                if time < 1000: print(f"time {time}ms: {process.sprint()} completed I/O; preempting {pevent.process.pid} {rqueue}")
+                if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed I/O; preempting {pevent.process.pid} {rqueue}")
 
                 # add back the cpu burst?
                 time_bursted = time - pevent.start
@@ -308,11 +309,11 @@ def srt(processes, tcs, alpha):
                 events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.CS_END))
                 events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.PREEMPT_QADD))
             else:
-                if time < 1000: print(f"time {time}ms: {process.sprint()} completed I/O; added to ready queue {rqueue}")
+                if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed I/O; added to ready queue {rqueue}")
         elif event.etype == Event.CS_START: # the process has finished being loaded into the CPU
             burst_time = process.run_burst()
             events.add(Event(process, time, burst_time, Event.CPU_BURST_END)) # TODO Last line written
-            if time < 1000: print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
+            if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
 
             burst_times.append(burst_time) # STATS TODO this is so fucked lol
             context_switches += 1 # STATS
@@ -320,7 +321,7 @@ def srt(processes, tcs, alpha):
             full_burst_time = process.get_full_burst_time()
             remaining_time = process.run_burst()
             events.add(Event(process, time, remaining_time, Event.CPU_BURST_END)) # TODO Last line written
-            if time < 1000: print(f"time {time}ms: {process.sprint()} started using the CPU for remaining {remaining_time}ms of {full_burst_time}ms burst {rqueue}")
+            if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} started using the CPU for remaining {remaining_time}ms of {full_burst_time}ms burst {rqueue}")
 
             context_switches += 1 # STATS
 
@@ -339,36 +340,33 @@ def srt(processes, tcs, alpha):
                 continue
 
             plural = "s" if process.rbursts() > 1 else ""
-            if time < 1000: print(f"time {time}ms: {process.sprint()} completed a CPU burst; {process.rbursts()} burst{plural} to go {rqueue}")
+            if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed a CPU burst; {process.rbursts()} burst{plural} to go {rqueue}")
 
             # Calculating new tau
             old_tau, new_tau = process.calc_new_tau(time, alpha)
-            if time < 1000: print(f"time {time}ms: Recalculated tau for process {process.pid}: old tau {old_tau}ms; new tau {new_tau}ms {rqueue}")
+            if time < DEBUG_TIME: print(f"time {time}ms: Recalculated tau for process {process.pid}: old tau {old_tau}ms; new tau {new_tau}ms {rqueue}")
 
             # Switching out of the CPU
             io_time = process.run_io() + math.ceil(tcs / 2) # adding in an end context switch
             events.add(Event(process, time, io_time, Event.IO))
-            if time < 1000: print(f"time {time}ms: Process {process.pid} switching out of CPU; will block on I/O until time {time + io_time}ms {rqueue}")
+            if time < DEBUG_TIME: print(f"time {time}ms: Process {process.pid} switching out of CPU; will block on I/O until time {time + io_time}ms {rqueue}")
 
             # Context switch to switch out of the CPU
             events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_END))
 
     print(f"time {time}ms: Simulator ended for SJF {rqueue}")
 
-    original_stdout = sys.stdout
-    with open('simout.txt', 'w') as f:
-        sys.stdout = f  # Change the standard output to the file we created.
-        print(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms")
-        total_wait_time = []
-        for i in processes: total_wait_time.append(i.get_total_wait_time())
-        print(f"-- average wait time: {mean3(total_wait_time) :.3f} ms")
-        ta_times = []
-        for i in processes: ta_times += i.get_ta_times()
-        print(f"-- average turnaround time: {mean3(ta_times) :.3f} ms")
-        print(f"-- total number of context switches: {context_switches}")
-        print(f"-- total number of preemptions: 0")
-        print(f"-- CPU utilization: {round3(cpu_running / time * 100) :.3f}%") # TODO
-        sys.stdout = original_stdout
+
+    # print(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms")
+    # total_wait_time = []
+    # for i in processes: total_wait_time.append(i.get_total_wait_time())
+    # print(f"-- average wait time: {mean3(total_wait_time) :.3f} ms")
+    # ta_times = []
+    # for i in processes: ta_times += i.get_ta_times()
+    # print(f"-- average turnaround time: {mean3(ta_times) :.3f} ms")
+    # print(f"-- total number of context switches: {context_switches}")
+    # print(f"-- total number of preemptions: 0")
+    # print(f"-- CPU utilization: {round3(cpu_running / time * 100) :.3f}%") # TODO
 
 
     return time
@@ -419,7 +417,7 @@ def rr(processes, tcs, tslice, n):
                     time = next_arrival
                     next_p.set_ta_entry(time)
                     queue.append(next_p)
-                    if time < 1000: print(f"time {time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
+                    if time < DEBUG_TIME: print(f"time {time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
                     i += 1
                 elif next_io < next_arrival:
                     time = next_io
@@ -427,19 +425,19 @@ def rr(processes, tcs, tslice, n):
                     io_p.reset_curr_io()
                     io_p.set_ta_entry(time)
                     queue.append(io_p)
-                    if time < 1000: print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
+                    if time < DEBUG_TIME: print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
                 # check if there is a tie
                 else:
                     if next_p.pid < io_block[0].pid:
                         time = next_arrival
                         next_p.set_ta_entry(time)
                         queue.append(next_p)
-                        if time < 1000: print(f"time {time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
+                        if time < DEBUG_TIME: print(f"time {time}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
                     else:
                         time = next_io
                         io_p.set_ta_entry(time)
                         queue.append(io_block.pop(0))
-                        if time < 1000: print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
+                        if time < DEBUG_TIME: print(f"time {time}ms: Process {io_p.pid} completed I/O; added to ready queue {queue}")
             # now move the process from queue to CPU
             curr_p = queue.pop(0)
             time += int(tcs / 2)
@@ -447,9 +445,9 @@ def rr(processes, tcs, tslice, n):
             # check to see if the current burst is already underway
             current_burst_initial_time = curr_p.burst_times[curr_p.cpu_bursts - curr_p.remaining_bursts]
             if curr_p.curr_burst < current_burst_initial_time:
-                if time < 1000: print(f"time {time}ms: Process {curr_p.pid} started using the CPU for remaining {curr_p.curr_burst}ms of {current_burst_initial_time}ms burst {queue}")
+                if time < DEBUG_TIME: print(f"time {time}ms: Process {curr_p.pid} started using the CPU for remaining {curr_p.curr_burst}ms of {current_burst_initial_time}ms burst {queue}")
             else:
-                if time < 1000: print(f"time {time}ms: Process {curr_p.pid} started using the CPU for {curr_p.curr_burst}ms burst {queue}")
+                if time < DEBUG_TIME: print(f"time {time}ms: Process {curr_p.pid} started using the CPU for {curr_p.curr_burst}ms burst {queue}")
 
 
 
@@ -477,7 +475,7 @@ def rr(processes, tcs, tslice, n):
             queue.append(next_p)
             next_p = processes[i]
             i += 1
-            if time < 1000: print(f"time {next_arrival}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
+            if time < DEBUG_TIME: print(f"time {next_arrival}ms: Process {next_p.pid} arrived; added to ready queue {queue}")
 
         ###### I/O block process completes #######
         elif next_io < next_arrival and next_io < next_burst and next_io < next_tslice:
@@ -485,7 +483,7 @@ def rr(processes, tcs, tslice, n):
             io_process.set_queue_entry(next_io)
             next_p.set_ta_entry(next_io)
             queue.append(io_process)
-            if time < 1000: print(f"time {next_io}ms: Process {io_process.pid} completed I/O; added to ready queue {queue}")
+            if time < DEBUG_TIME: print(f"time {next_io}ms: Process {io_process.pid} completed I/O; added to ready queue {queue}")
 
         ################# time slice happens ###################################
         elif next_tslice < next_arrival and next_tslice < next_burst and next_tslice < next_io:
@@ -493,10 +491,10 @@ def rr(processes, tcs, tslice, n):
             cpu_use_time += tslice
             curr_p.curr_burst -= tslice
             if queue.is_empty():
-                if time < 1000: print(f"time {time}ms: Time slice expired; no preemption because ready queue is empty {queue}")
+                if time < DEBUG_TIME: print(f"time {time}ms: Time slice expired; no preemption because ready queue is empty {queue}")
             else:
                 # switch to the next process in the queue
-                if time < 1000: print(f"time {time}ms: Time slice expired; process {curr_p.pid} preempted with {curr_p.curr_burst}ms remaining {queue}")
+                if time < DEBUG_TIME: print(f"time {time}ms: Time slice expired; process {curr_p.pid} preempted with {curr_p.curr_burst}ms remaining {queue}")
                 time += int(tcs / 2)       # switching out current process
                 context_switches += 1
                 preemptions += 1
@@ -509,9 +507,9 @@ def rr(processes, tcs, tslice, n):
                 # check to see if the current burst is already underway
                 current_burst_initial_time = curr_p.burst_times[curr_p.cpu_bursts - curr_p.remaining_bursts]
                 if curr_p.curr_burst < current_burst_initial_time:
-                    print(f"time {time}ms: Process {curr_p.pid} started using the CPU for remaining {curr_p.curr_burst}ms of {current_burst_initial_time}ms burst {queue}")
+                    if time < DEBUG_TIME: print(f"time {time}ms: Process {curr_p.pid} started using the CPU for remaining {curr_p.curr_burst}ms of {current_burst_initial_time}ms burst {queue}")
                 else:
-                    print(f"time {time}ms: Process {curr_p.pid} started using the CPU for {curr_p.curr_burst}ms burst {queue}")
+                    if time < DEBUG_TIME: print(f"time {time}ms: Process {curr_p.pid} started using the CPU for {curr_p.curr_burst}ms burst {queue}")
 
         ####### current process finishes CPU burst and before next process is added and before tslice is up ######
         else:
@@ -525,7 +523,7 @@ def rr(processes, tcs, tslice, n):
 
             # check to see if process terminated
             if curr_p.remaining_bursts == 0:
-                print(f"time {time}ms: Process {curr_p.pid} terminated {queue}")
+                if time < DEBUG_TIME: print(f"time {time}ms: Process {curr_p.pid} terminated {queue}")
                 finished += 1
                 curr_p.set_finish_time(time)
                 time += int(tcs/2)   # remove process from CPU
@@ -533,11 +531,11 @@ def rr(processes, tcs, tslice, n):
 
             else:
                 curr_p.reset_curr_burst()
-                if time < 1000: print(f"time {time}ms: Process {curr_p.pid} completed a CPU burst; {curr_p.remaining_bursts} bursts to go {queue}")
-                if time < 1000: print(f"time {time}ms: Process {curr_p.pid} switching out of CPU; ", end="")
+                if time < DEBUG_TIME: print(f"time {time}ms: Process {curr_p.pid} completed a CPU burst; {curr_p.remaining_bursts} bursts to go {queue}")
+                if time < DEBUG_TIME: print(f"time {time}ms: Process {curr_p.pid} switching out of CPU; ", end="")
                 time += int(tcs/2)
                 curr_p.set_io_exit(time)
-                if time < 1000: print(f"will block on I/O until time {curr_p.curr_io}ms {queue}")
+                if time < DEBUG_TIME: print(f"will block on I/O until time {curr_p.curr_io}ms {queue}")
                 io_block.append(curr_p)
                 io_block = sort_io(io_block)
                 curr_p = None
