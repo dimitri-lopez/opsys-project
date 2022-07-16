@@ -128,7 +128,7 @@ def sjf(processes, tcs, alpha):
         if time != events.get_next_time() and not in_use and rqueue.size() != 0:
             process = rqueue.pop()
             events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_IN)) # add half a context switch
-            process.set_queue_exit(time) # TODO
+            process.set_queue_exit(time)
             process.started_burst(time) # TODO
             in_use = True # TODO
             continue
@@ -138,23 +138,26 @@ def sjf(processes, tcs, alpha):
 
         if   event.etype == Event.ARRIVAL:  # a process has arrived
             rqueue.add(process)
+            process.set_queue_entry(time) # Set queue entry time, used for gettting the total amount of waiting time
+            process.set_ta_entry(time)
             if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} arrived; added to ready queue {rqueue}")
 
-            process.set_queue_entry(time) # TODO
         elif event.etype == Event.IO: # a process finished IO blocking, enters the ready queue
             rqueue.add(process)
+            process.set_queue_entry(time) # Set queue entry time, used for gettting the total amount of waiting time
+            process.set_ta_entry(time)
             if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed I/O; added to ready queue {rqueue}")
 
-            process.set_queue_entry(time) # Set queue entry time, used for gettting the total amount of waiting time
         elif event.etype == Event.CS_IN: # the process has finished being loaded into the CPU
             burst_time = process.run_burst()
             events.add(Event(process, time, burst_time, Event.CPU_BURST_END)) # TODO Last line written
             if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
 
-            burst_times.append(burst_time) # STATS
             context_switches += 1 # STATS
         elif event.etype == Event.CPU_BURST_END: # the process finished its cpu burst
             cpu_running += event.time # STATS
+            burst_times.append(event.time) # STATS
+            process.set_ta_exit(time + math.ceil(tcs / 2)) # STATS
             if process.rbursts() == 0: # process finished its last CPU burst
                 print(f"time {time}ms: Process {process.pid} terminated {rqueue}") # always gets printed
                 events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_OUT)) # switch out of cpu
@@ -176,7 +179,6 @@ def sjf(processes, tcs, alpha):
             events.add(Event(process, time, math.ceil(tcs / 2), Event.CS_OUT)) # move process out of CPU
         elif event.etype == Event.CS_OUT: # the process is being moved out of the CPU
             in_use = False # cpu no longer being used
-            process.finished_burst(time) # STATS
 
     print(f"time {time}ms: Simulator ended for SJF {rqueue}\n")
 
@@ -184,11 +186,14 @@ def sjf(processes, tcs, alpha):
     simout = open("simout.txt", "a")
     simout.write(f"Algorithm SJF\n")
     simout.write(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms\n")
-    total_wait_time = []
-    for i in processes: total_wait_time.append(i.get_total_wait_time())
-    simout.write(f"-- average wait time: {mean3(total_wait_time) :.3f} ms\n")
+    wait_times = []
+    for i in processes: wait_times += i.get_all_wait_times()
+    simout.write(f"-- average wait time: {mean3(wait_times) :.3f} ms\n")
     ta_times = []
-    for i in processes: ta_times += i.get_sjf_ta_times()
+    for i in processes:
+        print(i.sprint())
+        print(i.get_ta_times())
+    for i in processes: ta_times += i.get_ta_times()
     simout.write(f"-- average turnaround time: {mean3(ta_times) :.3f} ms\n")
     simout.write(f"-- total number of context switches: {context_switches}\n")
     simout.write(f"-- total number of preemptions: 0\n")
@@ -329,7 +334,7 @@ def srt(processes, tcs, alpha):
 
         elif event.etype == Event.CS_OUT:
             in_use = False
-            process.finished_burst(time)
+            process.set_ta_exit(time) # FIX
         elif event.etype == Event.PREEMPT_QADD:
             rqueue.add(process)
         elif event.etype == Event.CPU_BURST_END:
@@ -362,11 +367,11 @@ def srt(processes, tcs, alpha):
     simout = open("simout.txt", "a")
     simout.write(f"Algorithm SRT\n")
     simout.write(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms\n") # DONE
-    total_wait_time = []
-    for i in processes: total_wait_time.append(i.get_total_wait_time())
-    simout.write(f"-- average wait time: {mean3(total_wait_time) :.3f} ms\n") # DONE?
+    wait_times = []
+    for i in processes: wait_times += i.get_all_wait_times()
+    simout.write(f"-- average wait time: {mean3(wait_times) :.3f} ms\n") # DONE?
     ta_times = []
-    for i in processes: ta_times += i.get_sjf_ta_times()
+    for i in processes: ta_times += i.get_ta_times()
     simout.write(f"-- average turnaround time: {mean3(ta_times) :.3f} ms\n") # TODO
     simout.write(f"-- total number of context switches: {context_switches}\n") # DONE
     simout.write(f"-- total number of preemptions: {preemptions}\n") # DONE
@@ -549,11 +554,10 @@ def rr(processes, tcs, tslice, n):
 
     # print(f"-- average CPU burst time: {mean3(burst_times) :.3f} ms")
     avg_burst_time = mean3(burst_times)
-    total_wait_time = []
-    for i in processes:
-        total_wait_time.append(i.get_total_wait_time())
+    wait_times = []
+    for i in processes: wait_times += i.get_all_wait_times()
     # print(f"-- average wait time: {mean3(total_wait_time) :.3f} ms")
-    avg_wait_time = mean3(total_wait_time)
+    avg_wait_time = mean3(wait_times)
     ta_times = []
     for i in processes:
         ta_times += i.get_ta_times()

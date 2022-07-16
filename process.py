@@ -17,8 +17,7 @@ class Process:
         self.curr_burst = burst_times[0] # Time left on burst that the process is currently on
         self.wait_times = cpu_bursts*[0] # keeps track of the waiting time for each cpu burst (indices will match up with burst_times
         # self.wait_times = []
-        self.ta_times = cpu_bursts*[0]               # keeps track of the turnaround time for each cpu burst (indices will match up with burst_times
-        self.sjf_ta_times = []
+        self.ta_times = cpu_bursts*[0]   # keeps track of the turnaround time for each cpu burst (indices will match up with burst_times
         self.queue_entry = 0             # keeps track of the time when process enters the queue (for wait time)
         self.ta_entry = 0                # keeps track of the time when the process enters the queue for the first time (for turnaround time)
         self.burst_start = 0             # keep track of time when burst starts
@@ -36,7 +35,6 @@ class Process:
     def update_remaining_tau(self, time):
         self.remaining_tau -= time
 
-
     def add_context_switch(self):
         self.num_cs += 1
 
@@ -52,7 +50,7 @@ class Process:
         self.ta_entry = time
 
     def set_ta_exit(self, time):
-        self.ta_times[self.cpu_bursts - self.remaining_bursts] += (time - self.ta_entry)
+        self.ta_times[self.cpu_bursts - len(self.burst_times) - 1] += (time - self.ta_entry)
 
     def set_queue_entry(self, time):
         # Gets called everytime a process enters a queue. Used for calculating statistics
@@ -60,14 +58,19 @@ class Process:
 
     def set_queue_exit(self, time):
         # Gets called everytime a process exits a queue. Used for calculating statistics
-        self.wait_times[self.cpu_bursts-self.remaining_bursts] += (time-self.queue_entry)
+        # self.wait_times[self.cpu_bursts-self.remaining_bursts] += (time-self.queue_entry)
+        self.wait_times[self.cpu_bursts - len(self.burst_times)] += (time - self.queue_entry)
         # self.wait_times.append(time - self.queue_entry)
 
     def started_burst(self, time):
         self.burst_start = time
 
-    def finished_burst(self, time):
+    def __finished_burst(self, time):
+        self.ta_times
         self.sjf_ta_times.append(time - self.burst_start)
+
+    def get_all_wait_times(self):
+        return self.wait_times
 
     def get_total_wait_time(self):
         total = 0
@@ -77,8 +80,6 @@ class Process:
 
     def get_ta_times(self):
         return self.ta_times
-    def get_sjf_ta_times(self):
-        return self.sjf_ta_times
 
     def set_finish_time(self, time):
         self.finish = time
