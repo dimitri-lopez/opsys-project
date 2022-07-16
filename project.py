@@ -190,9 +190,6 @@ def sjf(processes, tcs, alpha):
     for i in processes: wait_times += i.get_all_wait_times()
     simout.write(f"-- average wait time: {mean3(wait_times) :.3f} ms\n")
     ta_times = []
-    for i in processes:
-        print(i.sprint())
-        print(i.get_ta_times())
     for i in processes: ta_times += i.get_ta_times()
     simout.write(f"-- average turnaround time: {mean3(ta_times) :.3f} ms\n")
     simout.write(f"-- total number of context switches: {context_switches}\n")
