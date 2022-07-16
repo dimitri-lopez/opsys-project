@@ -63,3 +63,5 @@ class SortedQueue():
                 str += " "+i.pid
         str += "]"
         return str
+    def __getitem__(self, key):
+        return self.queue[key]

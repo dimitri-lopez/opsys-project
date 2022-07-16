@@ -231,12 +231,18 @@ def srt_preemption_check(time, process, events):
     if ievent == -1: return (False, None)
     event = events.pop(ievent)
 
+    # eprocess_full_burst_time = process.get_full_burst_time()
+    # eprocess_remaining_time = event.time
+    # eprocess_running_time = eprocess_full_burst_time - eprocess_remaining_time
+    # previous_times = event.process.get_other_burst_time() - event.time
+
     time_ran = time - event.start
-    previous_times = event.process.get_other_burst_time() - event.time
-    remaining_time = event.process.tau - time_ran - previous_times
+    remaining_time = event.process.remaining_tau - time_ran
+    # print(f"\t burst process {event.process.sprint()}, remaining_tau: {event.process.remaining_tau} remaining_time: {remaining_time}")
+    # print(f"\treplacing process {process.sprint()} remainig_tau: {process.remaining_tau}")
     # print(f"\t CPU BURST process: {process.sprint()} time: {time} burst: {event}")
 
-    if process.tau <= remaining_time:
+    if process.remaining_tau < remaining_time:
         # print(f"\t process.tau: {process.tau} remaining_time: {remaining_time}")
         # print(f"\t FOUND A PREEMPTION process: {process.sprint()} time: {time} burst: {event} remaining_time: {remaining_time}")
         # print(f"\t FOUND A PREEMPTION process: {process.sprint()} time: {time} burst: {event} remaining_time: {remaining_time}")
@@ -249,7 +255,7 @@ def srt_preemption_check(time, process, events):
 def srt(processes, tcs, alpha):
     # based on shortest anticipated CPU burst time
     events = SortedQueue(None) # Will store all the events
-    rqueue = SortedQueue(lambda process: (process.tau, process.pid)) # this will be our ready queue
+    rqueue = SortedQueue(lambda process: (process.remaining_tau, process.pid)) # this will be our ready queue
 
     # Place arrival times in events
     for p in processes:
@@ -291,7 +297,18 @@ def srt(processes, tcs, alpha):
             if not preemption:
                 if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} arrived; added to ready queue {rqueue}")
             else: # TODO DO PREMPTION CHECK HERE
-                events.add(pevent)
+                preemptions += 1
+                if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} completed I/O; preempting {pevent.process.pid} {rqueue}")
+
+                # add back the cpu burst?
+                time_bursted = time - pevent.start
+                pevent.process.add_peemp()
+                pevent.process.preempted()
+                pevent.process.burst_times.insert(0, pevent.time - time_bursted)
+                # schedule cs_end
+                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.CS_OUT))
+                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.PREEMPT_QADD))
+                pevent.process.update_remaining_tau(time_bursted)
         elif event.etype == Event.PREEMPT_QADD:
             rqueue.add(process)
             process.set_queue_entry(time) # Set queue entry time, used for getting the total waiting time
@@ -322,16 +339,49 @@ def srt(processes, tcs, alpha):
         elif event.etype == Event.CS_IN: # the process has finished being loaded into the CPU
             burst_time = process.run_burst()
             events.add(Event(process, time, burst_time, Event.CPU_BURST_END))
+            context_switches += 1 # STATS
             if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} started using the CPU for {burst_time}ms burst {rqueue}")
 
-            context_switches += 1 # STATS
+            preemption = False
+            if rqueue.size() != 0:
+                preemption, pevent = srt_preemption_check(time, rqueue[0], events)
+            if preemption:
+                preemptions += 1
+                if time < DEBUG_TIME: print(f"time {time}ms: {rqueue[0].sprint()} will preempt {process.pid} {rqueue}")
+
+                # add back the cpu burst?
+                time_bursted = time - pevent.start
+                pevent.process.add_peemp()
+                pevent.process.preempted()
+                pevent.process.burst_times.insert(0, pevent.time - time_bursted)
+                # schedule cs_end
+                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.CS_OUT))
+                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.PREEMPT_QADD))
+                pevent.process.update_remaining_tau(time_bursted)
+
         elif event.etype == Event.PCS_IN:
             full_burst_time = process.get_full_burst_time()
             remaining_time = process.run_burst()
             events.add(Event(process, time, remaining_time, Event.CPU_BURST_END)) # TODO Last line written
-            if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} started using the CPU for remaining {remaining_time}ms of {full_burst_time}ms burst {rqueue}")
-
             context_switches += 1 # STATS
+            if time < DEBUG_TIME: print(f"time {time}ms: {process.sprint()} started using the CPU for remaining {remaining_time}ms of {full_burst_time}ms burst {rqueue}")
+            preemption = False
+            if rqueue.size() != 0:
+                preemption, pevent = srt_preemption_check(time, rqueue[0], events)
+            if preemption:
+                preemptions += 1
+                if time < DEBUG_TIME: print(f"time {time}ms: {rqueue[0].sprint()} will preempt {process.pid} {rqueue}")
+
+                # add back the cpu burst?
+                time_bursted = time - pevent.start
+                pevent.process.add_peemp()
+                pevent.process.preempted()
+                pevent.process.burst_times.insert(0, pevent.time - time_bursted)
+                # schedule cs_end
+                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.CS_OUT))
+                events.add(Event(pevent.process, time, math.ceil(tcs / 2), Event.PREEMPT_QADD))
+                pevent.process.update_remaining_tau(time_bursted)
+
         elif event.etype == Event.CPU_BURST_END: # the process finished its cpu burst
             cpu_running += event.time # STATS
             burst_times.append(event.time) # STATS
