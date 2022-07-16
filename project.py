@@ -523,7 +523,7 @@ def rr(processes, tcs, tslice, n):
 
             # check to see if process terminated
             if curr_p.remaining_bursts == 0:
-                if time < DEBUG_TIME: print(f"time {time}ms: Process {curr_p.pid} terminated {queue}")
+                print(f"time {time}ms: Process {curr_p.pid} terminated {queue}")
                 finished += 1
                 curr_p.set_finish_time(time)
                 time += int(tcs/2)   # remove process from CPU
