@@ -38,8 +38,8 @@ class SortedQueue():
         if self.sort_fn is None: self.queue.sort()
         else:                    self.queue.sort(key = self.sort_fn)
 
-    def pop(self):
-        return self.queue.pop(0)
+    def pop(self, index = 0):
+        return self.queue.pop(index)
     def peek(self):
         return self.queue[0]
 
