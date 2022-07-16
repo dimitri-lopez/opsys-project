@@ -202,7 +202,7 @@ def sjf(processes, tcs, alpha):
 def mean3(nums):
     return round3(mean(nums))
 def round3(num):
-    return math.ceil(num * DEBUG_TIME) / DEBUG_TIME
+    return math.ceil(num * 1000) / 1000
 def mean(nums):
     total = 0
     for i in nums: total += i
